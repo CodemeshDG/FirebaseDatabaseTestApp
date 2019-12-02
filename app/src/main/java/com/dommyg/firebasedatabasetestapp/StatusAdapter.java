@@ -45,7 +45,7 @@ public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusView
         return statusItemList.size();
     }
 
-    private String updateStatus() {
-        // TODO: Update task from database.
-    }
+//    private String updateStatus() {
+//        // TODO: Update task from database.
+//    }
 }

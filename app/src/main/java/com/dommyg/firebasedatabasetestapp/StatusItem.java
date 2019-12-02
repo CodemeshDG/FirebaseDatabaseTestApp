@@ -4,8 +4,8 @@ public class StatusItem {
 
     private String status;
 
-    public StatusItem(String status) {
-        this.status = status;
+    public StatusItem(String username) {
+        this.status = username + " - I have not updated my status yet.";
     }
 
     public String getStatus() {

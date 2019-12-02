@@ -1,33 +1,26 @@
 package com.dommyg.firebasedatabasetestapp;
 
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.content.Context;
+import android.content.Intent;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+
 public class UpdateStatusActivity extends SingleFragmentActivity {
+    private static final String KEY_ROOM_NAME = "room_name";
+    private static final String KEY_USERNAME = "username";
 
     @Override
     protected Fragment createFragment() {
-        return UpdateStatusFragment.newInstance();
-    }
-}
-
-class UpdateStatusFragment extends Fragment {
-
-    public static UpdateStatusFragment newInstance() {
-        return new UpdateStatusFragment();
+        String roomName = getIntent().getStringExtra(KEY_ROOM_NAME);
+        String username = getIntent().getStringExtra(KEY_USERNAME);
+        return UpdateStatusFragment.newInstance(roomName, username);
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_update_status, container, false);
-
-        return v;
+    public static Intent newIntent(Context packageContext, String roomName, String username) {
+        Intent intent = new Intent(packageContext, UpdateStatusActivity.class);
+        intent.putExtra(KEY_ROOM_NAME, roomName);
+        intent.putExtra(KEY_USERNAME, username);
+        return intent;
     }
 }
