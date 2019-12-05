@@ -19,6 +19,7 @@ import com.google.firebase.firestore.SetOptions;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class UpdateStatusFragment extends Fragment {
     static final String KEY_FEELING = "feeling";
@@ -33,7 +34,7 @@ public class UpdateStatusFragment extends Fragment {
         return new UpdateStatusFragment(roomName, username);
     }
 
-    public UpdateStatusFragment(String roomName, String username) {
+    private UpdateStatusFragment(String roomName, String username) {
         this.selectedFeeling = 0;
         this.roomName = roomName;
         this.username = username;
@@ -60,6 +61,7 @@ public class UpdateStatusFragment extends Fragment {
 
         final EditText editTextLocation = v.findViewById(R.id.editTextLocation);
         final CheckBox checkBoxBusy = v.findViewById(R.id.checkBoxBusy);
+
         Button buttonSubmitStatus = v.findViewById(R.id.buttonSubmitStatus);
         buttonSubmitStatus.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -84,7 +86,7 @@ public class UpdateStatusFragment extends Fragment {
                     mapStatus.put(KEY_BUSY, isBusy);
 
                     db.collection("rooms").document(roomName).collection("users").document(username).set(mapStatus, SetOptions.merge());
-                    getActivity().finish();
+                    Objects.requireNonNull(getActivity()).finish();
                 } else {
                     Toast.makeText(getContext(), "Select a feeling.", Toast.LENGTH_SHORT).show();
                 }

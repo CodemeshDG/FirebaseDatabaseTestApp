@@ -16,7 +16,7 @@ public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusView
     static class StatusViewHolder extends RecyclerView.ViewHolder {
         TextView textViewStatus;
 
-        public StatusViewHolder(@NonNull View itemView) {
+        StatusViewHolder(@NonNull View itemView) {
             super(itemView);
             this.textViewStatus = itemView.findViewById(R.id.textViewStatus);
         }
@@ -36,7 +36,6 @@ public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusView
     @Override
     public void onBindViewHolder(@NonNull StatusViewHolder holder, int position) {
         StatusItem currentItem = statusItemList.get(position);
-
         holder.textViewStatus.setText(currentItem.getStatus());
     }
 

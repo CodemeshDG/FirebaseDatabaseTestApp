@@ -29,7 +29,6 @@ public class MainMenuFragment extends Fragment {
 
     private void setUpButtons(View v) {
         Button buttonCreateRoom = v.findViewById(R.id.buttonMainCreateRoom);
-
         buttonCreateRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -39,7 +38,6 @@ public class MainMenuFragment extends Fragment {
         });
 
         Button buttonJoinRoom = v.findViewById(R.id.buttonMainJoinRoom);
-
         buttonJoinRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

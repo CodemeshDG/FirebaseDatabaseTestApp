@@ -2,6 +2,7 @@ package com.dommyg.firebasedatabasetestapp;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,14 +29,11 @@ import java.util.ArrayList;
 
 public class MainPanelFragment extends Fragment {
     private ArrayList<StatusItem> arrayListStatusItems;
-    private RecyclerView recyclerViewStatus;
     private StatusAdapter statusAdapter;
-    private RecyclerView.LayoutManager recyclerViewStatusLayoutManager;
 
     private String roomName;
     private String myUsername;
 
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CollectionReference usersReference;
     private ListenerRegistration statusListener;
 
@@ -43,9 +41,10 @@ public class MainPanelFragment extends Fragment {
         return new MainPanelFragment(roomName, myUsername);
     }
 
-    public MainPanelFragment(String roomName, String myUsername) {
+    private MainPanelFragment(String roomName, String myUsername) {
         this.roomName = roomName;
         this.myUsername = myUsername;
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
         this.usersReference = db.collection("rooms")
                 .document(roomName)
                 .collection("users");
@@ -75,11 +74,11 @@ public class MainPanelFragment extends Fragment {
     }
 
     private void setUpStatusRecyclerView(View v) {
-        recyclerViewStatus = v.findViewById(R.id.recyclerViewStatus);
+        RecyclerView recyclerViewStatus = v.findViewById(R.id.recyclerViewStatus);
         recyclerViewStatus.setNestedScrollingEnabled(false);
         recyclerViewStatus.setHasFixedSize(true);
 
-        recyclerViewStatusLayoutManager = new LinearLayoutManager(getContext());
+        RecyclerView.LayoutManager recyclerViewStatusLayoutManager = new LinearLayoutManager(getContext());
         statusAdapter = new StatusAdapter(arrayListStatusItems);
 
         recyclerViewStatus.setLayoutManager(recyclerViewStatusLayoutManager);
@@ -96,7 +95,6 @@ public class MainPanelFragment extends Fragment {
                     Toast.makeText(getContext(), "ERROR: EventListener failure.", Toast.LENGTH_SHORT).show();
                     return;
                 }
-
                 refreshStatuses();
             }
         });
@@ -116,12 +114,14 @@ public class MainPanelFragment extends Fragment {
                         while (arrayListStatusItems.size() != 0) {
                             arrayListStatusItems.remove(0);
                         }
+
                         for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
                             if (!documentSnapshot.contains(UpdateStatusFragment.KEY_FEELING)) {
                                 arrayListStatusItems.add(
                                         new StatusItem(documentSnapshot.getString(
                                                 MainPanelActivity.KEY_USERNAME)));
                             } else {
+                                //noinspection ConstantConditions
                                 arrayListStatusItems.add(
                                         new StatusItem(documentSnapshot.getString(
                                                 MainPanelActivity.KEY_USERNAME),

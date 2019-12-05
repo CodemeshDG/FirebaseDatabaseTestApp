@@ -1,18 +1,18 @@
 package com.dommyg.firebasedatabasetestapp;
 
-public class StatusItem {
+class StatusItem {
 
     private String status;
 
-    public StatusItem(String username) {
+    StatusItem(String username) {
         this.status = username + " - I have not updated my status yet.";
     }
 
-    public StatusItem(String username, int feeling, String location, boolean isBusy) {
+    StatusItem(String username, int feeling, String location, boolean isBusy) {
         this.status = createStatus(username, feeling, location, isBusy);
     }
 
-    public String getStatus() {
+    String getStatus() {
         return status;
     }
 

@@ -21,7 +21,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 public class JoinRoomFragment extends Fragment {
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private CollectionReference roomsRef = db.collection("rooms");
+    private CollectionReference roomsReference = db.collection("rooms");
 
     public static JoinRoomFragment newInstance() {
         return new JoinRoomFragment();
@@ -47,21 +47,23 @@ public class JoinRoomFragment extends Fragment {
         final EditText editTextPassword = v.findViewById(R.id.editTextPassword);
 
         Button buttonJoinRoom = v.findViewById(R.id.buttonCreateRoom);
-
         buttonJoinRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (editTextUsername.length() != 0 &&
                         editTextRoomName.length() != 0 &&
                         editTextPassword.length() != 0) {
+
                     String roomName = editTextRoomName.getText().toString();
                     final String password = editTextPassword.getText().toString();
-                    roomsRef.document(roomName).get()
+
+                    roomsReference.document(roomName).get()
                             .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                         @Override
                         public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                             if (task.isSuccessful()) {
                                 DocumentSnapshot document = task.getResult();
+
                                 if (document.exists()) {
                                     if (password.equals(document.getString(MainPanelActivity.KEY_PASSWORD))) {
                                         Intent intent = MainPanelActivity.newIntentForJoinRoom(getContext(),

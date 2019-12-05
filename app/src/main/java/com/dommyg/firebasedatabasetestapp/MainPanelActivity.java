@@ -25,18 +25,22 @@ public class MainPanelActivity extends SingleFragmentActivity {
     public static Intent newIntentForCreateRoom(Context packageContext, String username, String roomName,
                                    String password) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
+
         Map<String, String> mapPassword = new HashMap<>();
         mapPassword.put(KEY_PASSWORD, password);
         Map<String, String> mapUsername = new HashMap<>();
         mapUsername.put(KEY_USERNAME, username);
         Map<String, String> mapRoomName = new HashMap<>();
         mapPassword.put(KEY_ROOM_NAME, roomName);
+
         db.collection("rooms")
                 .document(roomName)
                 .set(mapRoomName);
+
         db.collection("rooms")
                 .document(roomName)
                 .set(mapPassword);
+
         db.collection("rooms")
                 .document(roomName)
                 .collection("users")
@@ -51,8 +55,10 @@ public class MainPanelActivity extends SingleFragmentActivity {
 
     public static Intent newIntentForJoinRoom(Context packageContext, String username, String roomName) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
+
         Map<String, String> mapUsername = new HashMap<>();
         mapUsername.put(KEY_USERNAME, username);
+
         db.collection("rooms")
                 .document(roomName)
                 .collection("users")
