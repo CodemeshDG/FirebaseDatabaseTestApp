@@ -13,8 +13,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.google.firebase.firestore.FirebaseFirestore;
-
 public class CreateRoomFragment extends Fragment {
 
     public static CreateRoomFragment newInstance() {
@@ -44,7 +42,7 @@ public class CreateRoomFragment extends Fragment {
                 if (editTextUsername.length() != 0 &&
                         editTextRoomName.length() != 0 &&
                         editTextPassword.length() != 0) {
-                    Intent intent = MainPanelActivity.newIntent(getContext(),
+                    Intent intent = MainPanelActivity.newIntentForCreateRoom(getContext(),
                             editTextUsername.getText().toString(),
                             editTextRoomName.getText().toString(),
                             editTextPassword.getText().toString());

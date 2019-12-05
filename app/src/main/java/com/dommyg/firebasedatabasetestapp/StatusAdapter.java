@@ -12,7 +12,6 @@ import java.util.ArrayList;
 
 public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusViewHolder> {
     private ArrayList<StatusItem> statusItemList;
-    private MainPanelFragment mainPanelFragment;
 
     static class StatusViewHolder extends RecyclerView.ViewHolder {
         TextView textViewStatus;
@@ -23,8 +22,7 @@ public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusView
         }
     }
 
-    StatusAdapter(MainPanelFragment mainPanelFragment, ArrayList<StatusItem> statusItemList) {
-        this.mainPanelFragment = mainPanelFragment;
+    StatusAdapter(ArrayList<StatusItem> statusItemList) {
         this.statusItemList = statusItemList;
     }
 
@@ -37,7 +35,9 @@ public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusView
 
     @Override
     public void onBindViewHolder(@NonNull StatusViewHolder holder, int position) {
-        // TODO: Update task from database.
+        StatusItem currentItem = statusItemList.get(position);
+
+        holder.textViewStatus.setText(currentItem.getStatus());
     }
 
     @Override
@@ -45,7 +45,4 @@ public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusView
         return statusItemList.size();
     }
 
-//    private String updateStatus() {
-//        // TODO: Update task from database.
-//    }
 }
