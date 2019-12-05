@@ -20,15 +20,15 @@ class StatusItem {
         StringBuilder sb = new StringBuilder();
         sb.append(username).append(" - ");
         switch (feeling) {
-            case R.id.radioButtonHappy:
+            case 1:
                 sb.append("I am happy ");
                 break;
 
-            case R.id.radioButtonIndifferent:
+            case 2:
                 sb.append("I am indifferent ");
                 break;
 
-            case R.id.radioButtonSad:
+            case 3:
                 sb.append("I am sad ");
                 break;
         }

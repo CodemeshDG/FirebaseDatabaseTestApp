@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
@@ -52,10 +53,21 @@ public class UpdateStatusFragment extends Fragment {
 
     private void setUpElements(View v) {
         final RadioGroup radioGroupFeeling = v.findViewById(R.id.radioGroupFeeling);
+
         radioGroupFeeling.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup radioGroup, int i) {
-                selectedFeeling = radioGroupFeeling.getCheckedRadioButtonId();
+                switch (radioGroupFeeling.getCheckedRadioButtonId()) {
+                    case R.id.radioButtonHappy:
+                        selectedFeeling = 1;
+                        break;
+                    case R.id.radioButtonIndifferent:
+                        selectedFeeling = 2;
+                        break;
+                    case R.id.radioButtonSad:
+                        selectedFeeling = 3;
+                        break;
+                }
             }
         });
 

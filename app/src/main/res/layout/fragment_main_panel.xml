@@ -9,6 +9,8 @@
         android:id="@+id/recyclerViewStatus"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:padding="4dp"
+        android:background="@color/cardview_dark_background"
         app:layout_constraintBottom_toTopOf="@+id/buttonUpdateStatus"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
