@@ -17,8 +17,10 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".CreateRoomActivity"/>
-        <activity android:name=".JoinRoomActivity"/>
+        <activity android:name=".CreateRoomActivity"
+            android:noHistory="true"/>
+        <activity android:name=".JoinRoomActivity"
+            android:noHistory="true"/>
         <activity android:name=".MainPanelActivity" />
         <activity android:name=".UpdateStatusActivity" />
     </application>
