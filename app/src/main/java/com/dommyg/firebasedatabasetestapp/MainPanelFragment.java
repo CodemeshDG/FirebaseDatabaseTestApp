@@ -10,11 +10,17 @@ import android.widget.Button;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
 public class MainPanelFragment extends Fragment {
     private ArrayList<StatusItem> arrayListStatusItems;
+    private RecyclerView recyclerViewStatus;
+    private StatusAdapter statusAdapter;
+    private RecyclerView.LayoutManager recyclerViewStatusLayoutManager;
+
     private String roomName;
     private String myUsername;
 
@@ -46,5 +52,20 @@ public class MainPanelFragment extends Fragment {
                 startActivity(intent);
             }
         });
+    }
+
+    private void setUpStatusRecyclerView(View v) {
+        recyclerViewStatus = v.findViewById(R.id.recyclerViewStatus);
+        recyclerViewStatus.setNestedScrollingEnabled(false);
+
+        recyclerViewStatusLayoutManager = new LinearLayoutManager(getContext());
+        statusAdapter = new StatusAdapter(this, arrayListStatusItems);
+
+        recyclerViewStatus.setLayoutManager(recyclerViewStatusLayoutManager);
+        recyclerViewStatus.setAdapter(statusAdapter);
+    }
+
+    private void refreshStatuses() {
+        statusAdapter.notifyDataSetChanged();
     }
 }
