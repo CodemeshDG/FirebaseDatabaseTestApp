@@ -2,18 +2,52 @@ package com.dommyg.firebasedatabasetestapp;
 
 class StatusItem {
 
-    private String status;
+    private String username;
+    private String feeling;
+    private String location;
+    private boolean isBusy;
 
-    StatusItem(String username) {
-        this.status = username + " - I have not updated my status yet.";
+    public StatusItem() {
+        // Empty constructor for Firestore RecyclerView use
     }
 
-    StatusItem(String username, int feeling, String location, boolean isBusy) {
-        this.status = createStatus(username, feeling, location, isBusy);
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getFeeling() {
+        return feeling;
+    }
+
+    public void setFeeling(String feeling) {
+        this.feeling = feeling;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public boolean isBusy() {
+        return isBusy;
+    }
+
+    public void setBusy(boolean busy) {
+        isBusy = busy;
     }
 
     String getStatus() {
-        return status;
+        if (feeling != null) {
+            return createStatus(username, Integer.valueOf(feeling), location, isBusy);
+        }
+        return username + " - I have not updated my status yet.";
     }
 
     private String createStatus(String username, int feeling, String location, boolean isBusy) {

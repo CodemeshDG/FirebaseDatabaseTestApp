@@ -8,10 +8,10 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.ArrayList;
+import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
+import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 
-public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusViewHolder> {
-    private ArrayList<StatusItem> statusItemList;
+public class StatusAdapter extends FirestoreRecyclerAdapter<StatusItem, StatusAdapter.StatusViewHolder> {
 
     static class StatusViewHolder extends RecyclerView.ViewHolder {
         TextView textViewStatus;
@@ -22,8 +22,13 @@ public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusView
         }
     }
 
-    StatusAdapter(ArrayList<StatusItem> statusItemList) {
-        this.statusItemList = statusItemList;
+    StatusAdapter(@NonNull FirestoreRecyclerOptions<StatusItem> options) {
+        super(options);
+    }
+
+    @Override
+    protected void onBindViewHolder(@NonNull StatusViewHolder holder, int position, @NonNull StatusItem model) {
+        holder.textViewStatus.setText(model.getStatus());
     }
 
     @NonNull
@@ -31,17 +36,6 @@ public class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.StatusView
     public StatusViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.fragment_status, parent, false);
         return new StatusViewHolder(v);
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull StatusViewHolder holder, int position) {
-        StatusItem currentItem = statusItemList.get(position);
-        holder.textViewStatus.setText(currentItem.getStatus());
-    }
-
-    @Override
-    public int getItemCount() {
-        return statusItemList.size();
     }
 
 }
