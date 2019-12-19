@@ -14,7 +14,22 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class MainMenuFragment extends Fragment {
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private final CollectionReference USERNAME_REFERENCE = db.collection("master username list");
+    private final CollectionReference USER_REFERENCE = db.collection("master user list");
+    private final String KEY_USERNAME = "username";
+    private final String KEY_UID = "uid";
+
     private boolean hasUsername = false;
 
     private Button buttonCreateRoom;
@@ -26,6 +41,7 @@ public class MainMenuFragment extends Fragment {
     private EditText editTextUsername;
 
     private String username;
+    private String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
     public static MainMenuFragment newInstance() {
         return new MainMenuFragment();
@@ -36,6 +52,9 @@ public class MainMenuFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_main_menu, container, false);
 
+        checkIfHasUsername();
+
+        setUpUsernameElements(v);
         setUpButtons(v);
 
         return v;
@@ -67,13 +86,27 @@ public class MainMenuFragment extends Fragment {
                 if (textViewUsername.length() == 0) {
                     Toast.makeText(getContext(), "Enter a username.", Toast.LENGTH_SHORT).show();
                 } else {
-                    // Create username in database and set username String. ToggleUsernameElements. ToggleRoomButtons.
+                    String enteredUsername = editTextUsername.getText().toString();
+                    if (checkIfUsernameExists(enteredUsername)) {
+                        Toast.makeText(getContext(), "This username already exists.", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Map<String, String> mapUsername = new HashMap<>();
+                        mapUsername.put(KEY_USERNAME, enteredUsername);
+                        Map<String, String> mapUid = new HashMap<>();
+                        mapUid.put(KEY_UID, uid);
+                        USERNAME_REFERENCE.document(enteredUsername).set(mapUid);
+                        USER_REFERENCE.document(uid).set(mapUsername);
+                        setUsername();
+                        toggleOffUsernameElements();
+                        toggleRoomButtons();
+                    }
                 }
             }
         });
 
         toggleRoomButtons();
         if (hasUsername) {
+            setUsername();
             toggleOffUsernameElements();
         }
     }
@@ -99,11 +132,31 @@ public class MainMenuFragment extends Fragment {
             buttonSetUsername.setVisibility(View.GONE);
     }
 
-    private boolean checkIfUsernameExists() {
-
+    private boolean checkIfUsernameExists(String enteredUsername) {
+        return USERNAME_REFERENCE.document(enteredUsername)
+                .get()
+                .isSuccessful();
     }
 
-    private boolean checkIfHasUsername() {
+    private void checkIfHasUsername() {
+        USER_REFERENCE.document(uid)
+                .get()
+                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                    @Override
+                    public void onSuccess(DocumentSnapshot documentSnapshot) {
+                        hasUsername = (documentSnapshot.getString(KEY_USERNAME) != null);
+                    }
+                });
+    }
 
+    private void setUsername() {
+        USER_REFERENCE.document(uid)
+                .get()
+                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+            @Override
+            public void onSuccess(DocumentSnapshot documentSnapshot) {
+                username = documentSnapshot.getString(KEY_USERNAME);
+            }
+        });
     }
 }
