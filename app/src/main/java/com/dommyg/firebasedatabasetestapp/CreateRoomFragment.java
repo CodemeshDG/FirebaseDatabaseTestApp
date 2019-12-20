@@ -14,9 +14,14 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 public class CreateRoomFragment extends Fragment {
+    private String username;
 
-    public static CreateRoomFragment newInstance() {
-        return new CreateRoomFragment();
+    public static CreateRoomFragment newInstance(String username) {
+        return new CreateRoomFragment(username);
+    }
+
+    public CreateRoomFragment(String username) {
+        this.username = username;
     }
 
     @Nullable
@@ -30,7 +35,6 @@ public class CreateRoomFragment extends Fragment {
     }
 
     private void setUpElements(View v) {
-        final EditText editTextUsername = v.findViewById(R.id.editTextUsername);
         final EditText editTextRoomName = v.findViewById(R.id.editTextRoomName);
         final EditText editTextPassword = v.findViewById(R.id.editTextPassword);
 
@@ -39,11 +43,10 @@ public class CreateRoomFragment extends Fragment {
         buttonCreateRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (editTextUsername.length() != 0 &&
-                        editTextRoomName.length() != 0 &&
+                if (editTextRoomName.length() != 0 &&
                         editTextPassword.length() != 0) {
                     Intent intent = MainPanelActivity.newIntentForCreateRoom(getContext(),
-                            editTextUsername.getText().toString(),
+                            username,
                             editTextRoomName.getText().toString(),
                             editTextPassword.getText().toString());
                     startActivity(intent);

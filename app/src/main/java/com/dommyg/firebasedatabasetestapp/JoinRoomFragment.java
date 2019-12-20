@@ -23,8 +23,14 @@ public class JoinRoomFragment extends Fragment {
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CollectionReference roomsReference = db.collection("rooms");
 
-    public static JoinRoomFragment newInstance() {
-        return new JoinRoomFragment();
+    private String username;
+
+    public static JoinRoomFragment newInstance(String username) {
+        return new JoinRoomFragment(username);
+    }
+
+    public JoinRoomFragment(String username) {
+        this.username = username;
     }
 
     @Nullable
@@ -42,7 +48,6 @@ public class JoinRoomFragment extends Fragment {
     }
 
     private void setUpElements(View v) {
-        final EditText editTextUsername = v.findViewById(R.id.editTextUsername);
         final EditText editTextRoomName = v.findViewById(R.id.editTextRoomName);
         final EditText editTextPassword = v.findViewById(R.id.editTextPassword);
 
@@ -50,8 +55,7 @@ public class JoinRoomFragment extends Fragment {
         buttonJoinRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (editTextUsername.length() != 0 &&
-                        editTextRoomName.length() != 0 &&
+                if (editTextRoomName.length() != 0 &&
                         editTextPassword.length() != 0) {
 
                     String roomName = editTextRoomName.getText().toString();
@@ -67,7 +71,7 @@ public class JoinRoomFragment extends Fragment {
                                 if (document.exists()) {
                                     if (password.equals(document.getString(MainPanelActivity.KEY_PASSWORD))) {
                                         Intent intent = MainPanelActivity.newIntentForJoinRoom(getContext(),
-                                                editTextUsername.getText().toString(),
+                                                username,
                                                 editTextRoomName.getText().toString());
                                         startActivity(intent);
                                     } else {

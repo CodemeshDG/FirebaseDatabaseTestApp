@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.Objects;
 
 public class UpdateStatusFragment extends Fragment {
-    static final String KEY_FEELING = "feeling";
-    static final String KEY_LOCATION = "location";
-    static final String KEY_BUSY = "is_busy";
+    private static final String KEY_FEELING = "feeling";
+    private static final String KEY_LOCATION = "location";
+    private static final String KEY_BUSY = "is_busy";
 
     private int selectedFeeling;
     private String roomName;

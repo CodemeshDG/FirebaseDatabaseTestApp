@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
@@ -65,7 +66,7 @@ public class MainMenuFragment extends Fragment {
         buttonCreateRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = CreateRoomActivity.newIntent(getContext());
+                Intent intent = CreateRoomActivity.newIntent(getContext(), username);
                 startActivity(intent);
             }
         });
@@ -74,7 +75,7 @@ public class MainMenuFragment extends Fragment {
         buttonJoinRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = JoinRoomActivity.newIntent(getContext());
+                Intent intent = JoinRoomActivity.newIntent(getContext(), username);
                 startActivity(intent);
             }
         });
@@ -83,7 +84,7 @@ public class MainMenuFragment extends Fragment {
         buttonSetUsername.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (textViewUsername.length() == 0) {
+                if (editTextUsername.length() == 0) {
                     Toast.makeText(getContext(), "Enter a username.", Toast.LENGTH_SHORT).show();
                 } else {
                     String enteredUsername = editTextUsername.getText().toString();
@@ -92,13 +93,14 @@ public class MainMenuFragment extends Fragment {
                     } else {
                         Map<String, String> mapUsername = new HashMap<>();
                         mapUsername.put(KEY_USERNAME, enteredUsername);
+
                         Map<String, String> mapUid = new HashMap<>();
                         mapUid.put(KEY_UID, uid);
+
                         USERNAME_REFERENCE.document(enteredUsername).set(mapUid);
                         USER_REFERENCE.document(uid).set(mapUsername);
+
                         setUsername();
-                        toggleOffUsernameElements();
-                        toggleRoomButtons();
                     }
                 }
             }
@@ -107,7 +109,6 @@ public class MainMenuFragment extends Fragment {
         toggleRoomButtons();
         if (hasUsername) {
             setUsername();
-            toggleOffUsernameElements();
         }
     }
 
@@ -145,17 +146,24 @@ public class MainMenuFragment extends Fragment {
                     @Override
                     public void onSuccess(DocumentSnapshot documentSnapshot) {
                         hasUsername = (documentSnapshot.getString(KEY_USERNAME) != null);
+                        setUsername();
                     }
                 });
     }
 
     private void setUsername() {
         USER_REFERENCE.document(uid)
-                .get()
-                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                .get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                    @Override
+                    public void onSuccess(DocumentSnapshot documentSnapshot) {
+                        username = documentSnapshot.getString(KEY_USERNAME);
+                        toggleOffUsernameElements();
+                        toggleRoomButtons();
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
             @Override
-            public void onSuccess(DocumentSnapshot documentSnapshot) {
-                username = documentSnapshot.getString(KEY_USERNAME);
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(getContext(), "ERROR: Could not check database.", Toast.LENGTH_SHORT).show();
             }
         });
     }
