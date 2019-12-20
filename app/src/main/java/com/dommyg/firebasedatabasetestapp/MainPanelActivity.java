@@ -6,6 +6,7 @@ import android.content.Intent;
 import androidx.fragment.app.Fragment;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -63,7 +64,7 @@ public class MainPanelActivity extends SingleFragmentActivity {
                 .document(roomName)
                 .collection("users")
                 .document(username)
-                .set(mapUsername);
+                .set(mapUsername, SetOptions.merge());
 
         Intent intent = new Intent(packageContext, MainPanelActivity.class);
         intent.putExtra(KEY_USERNAME, username);

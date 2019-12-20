@@ -16,7 +16,7 @@ public class CreateRoomActivity extends SingleFragmentActivity {
 
     public static Intent newIntent(Context packageContext, String username) {
         Intent intent = new Intent(packageContext, CreateRoomActivity.class);
-        intent.putExtra(username, KEY_USERNAME);
+        intent.putExtra(KEY_USERNAME, username);
         return intent;
     }
 }
