@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -41,6 +42,8 @@ public class MainMenuFragment extends Fragment {
 
     private EditText editTextUsername;
 
+    private ProgressBar progressBarMainMenu;
+
     private String username;
     private String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
@@ -53,16 +56,65 @@ public class MainMenuFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_main_menu, container, false);
 
-        checkIfHasUsername();
-
-        setUpUsernameElements(v);
-        setUpButtons(v);
+        initializeViews(v);
+        setUpButtons();
 
         return v;
     }
 
-    private void setUpButtons(View v) {
+    @Override
+    public void onStart() {
+        super.onStart();
+        checkIfHasUsername();
+    }
+
+    private void initializeViews(View v) {
         buttonCreateRoom = v.findViewById(R.id.buttonMainCreateRoom);
+        buttonJoinRoom = v.findViewById(R.id.buttonMainJoinRoom);
+        buttonSetUsername = v.findViewById(R.id.buttonSetUsername);
+        textViewUsername = v.findViewById(R.id.textViewUsername);
+        editTextUsername = v.findViewById(R.id.editTextUsername);
+        progressBarMainMenu = v.findViewById(R.id.progressBarMainMenu);
+    }
+
+    private void showProgressBar() {
+        buttonCreateRoom.setVisibility(View.GONE);
+        buttonJoinRoom.setVisibility(View.GONE);
+        buttonSetUsername.setVisibility(View.GONE);
+        textViewUsername.setVisibility(View.GONE);
+        editTextUsername.setVisibility(View.GONE);
+        progressBarMainMenu.setVisibility(View.VISIBLE);
+    }
+
+    private void hideProgressBar() {
+        progressBarMainMenu.setVisibility(View.GONE);
+    }
+
+    private void showUsernameElements() {
+        editTextUsername.setVisibility(View.GONE);
+        buttonSetUsername.setVisibility(View.GONE);
+
+        textViewUsername.setText("Welcome " + username + "!");
+        textViewUsername.setVisibility(View.VISIBLE);
+
+        buttonCreateRoom.setEnabled(true);
+        buttonJoinRoom.setEnabled(true);
+        buttonCreateRoom.setVisibility(View.VISIBLE);
+        buttonJoinRoom.setVisibility(View.VISIBLE);
+    }
+
+    private void showCreateUsernameElements() {
+        editTextUsername.setVisibility(View.VISIBLE);
+        buttonSetUsername.setVisibility(View.VISIBLE);
+        textViewUsername.setVisibility(View.VISIBLE);
+
+        buttonCreateRoom.setEnabled(false);
+        buttonJoinRoom.setEnabled(false);
+        buttonCreateRoom.setVisibility(View.VISIBLE);
+        buttonJoinRoom.setVisibility(View.VISIBLE);
+    }
+
+    private void setUpButtons() {
         buttonCreateRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -71,7 +123,6 @@ public class MainMenuFragment extends Fragment {
             }
         });
 
-        buttonJoinRoom = v.findViewById(R.id.buttonMainJoinRoom);
         buttonJoinRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -80,7 +131,6 @@ public class MainMenuFragment extends Fragment {
             }
         });
 
-        buttonSetUsername = v.findViewById(R.id.buttonSetUsername);
         buttonSetUsername.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -91,6 +141,7 @@ public class MainMenuFragment extends Fragment {
                     if (checkIfUsernameExists(enteredUsername)) {
                         Toast.makeText(getContext(), "This username already exists.", Toast.LENGTH_SHORT).show();
                     } else {
+                        showProgressBar();
                         Map<String, String> mapUsername = new HashMap<>();
                         mapUsername.put(KEY_USERNAME, enteredUsername);
 
@@ -105,32 +156,6 @@ public class MainMenuFragment extends Fragment {
                 }
             }
         });
-
-        toggleRoomButtons();
-        if (hasUsername) {
-            setUsername();
-        }
-    }
-
-    private void setUpUsernameElements(View v) {
-        textViewUsername = v.findViewById(R.id.textViewUsername);
-        editTextUsername = v.findViewById(R.id.editTextUsername);
-    }
-
-    private void toggleRoomButtons() {
-        if (hasUsername) {
-            buttonCreateRoom.setEnabled(true);
-            buttonJoinRoom.setEnabled(true);
-        } else {
-            buttonCreateRoom.setEnabled(false);
-            buttonJoinRoom.setEnabled(false);
-        }
-    }
-
-    private void toggleOffUsernameElements() {
-            textViewUsername.setText("Welcome " + username + "!");
-            editTextUsername.setVisibility(View.GONE);
-            buttonSetUsername.setVisibility(View.GONE);
     }
 
     private boolean checkIfUsernameExists(String enteredUsername) {
@@ -140,13 +165,19 @@ public class MainMenuFragment extends Fragment {
     }
 
     private void checkIfHasUsername() {
+        showProgressBar();
         USER_REFERENCE.document(uid)
                 .get()
                 .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
                     public void onSuccess(DocumentSnapshot documentSnapshot) {
                         hasUsername = (documentSnapshot.getString(KEY_USERNAME) != null);
-                        setUsername();
+                        if (hasUsername) {
+                            setUsername();
+                        } else {
+                            hideProgressBar();
+                            showCreateUsernameElements();
+                        }
                     }
                 });
     }
@@ -157,8 +188,8 @@ public class MainMenuFragment extends Fragment {
                     @Override
                     public void onSuccess(DocumentSnapshot documentSnapshot) {
                         username = documentSnapshot.getString(KEY_USERNAME);
-                        toggleOffUsernameElements();
-                        toggleRoomButtons();
+                        hideProgressBar();
+                        showUsernameElements();
                     }
                 }).addOnFailureListener(new OnFailureListener() {
             @Override

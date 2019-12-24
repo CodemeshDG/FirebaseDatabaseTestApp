@@ -44,4 +44,11 @@
         android:layout_marginTop="8dp"
         android:text="Join Room"
         android:textSize="20sp" />
+
+    <ProgressBar
+        android:id="@+id/progressBarMainMenu"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:indeterminate="true" />
 </LinearLayout>
