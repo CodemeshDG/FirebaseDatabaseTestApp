@@ -81,7 +81,7 @@ public class JoinRoomFragment extends Fragment {
                                     Toast.makeText(getContext(), "ERROR: No such room exists.", Toast.LENGTH_SHORT).show();
                                 }
                             } else {
-                                Toast.makeText(getContext(), "ERROR: Could not search from room.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "ERROR: Could not search for room.", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
@@ -91,4 +91,28 @@ public class JoinRoomFragment extends Fragment {
             }
         });
     }
+//
+//    private class MyOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
+//        @Override
+//        public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+//            if (task.isSuccessful()) {
+//                DocumentSnapshot document = task.getResult();
+//
+//                if (document.exists()) {
+//                    if (password.equals(document.getString(MainPanelActivity.KEY_PASSWORD))) {
+//                        Intent intent = MainPanelActivity.newIntentForJoinRoom(getContext(),
+//                                username,
+//                                editTextRoomName.getText().toString());
+//                        startActivity(intent);
+//                    } else {
+//                        Toast.makeText(getContext(), "ERROR: Incorrect password.", Toast.LENGTH_SHORT).show();
+//                    }
+//                } else {
+//                    Toast.makeText(getContext(), "ERROR: No such room exists.", Toast.LENGTH_SHORT).show();
+//                }
+//            } else {
+//                Toast.makeText(getContext(), "ERROR: Could not search from room.", Toast.LENGTH_SHORT).show();
+//            }
+//        }
+//    }
 }

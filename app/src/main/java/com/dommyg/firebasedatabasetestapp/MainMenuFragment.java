@@ -27,8 +27,8 @@ import java.util.Map;
 
 public class MainMenuFragment extends Fragment {
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private final CollectionReference USERNAME_REFERENCE = db.collection("master username list");
-    private final CollectionReference USER_REFERENCE = db.collection("master user list");
+    private final CollectionReference USERNAME_REFERENCE = db.collection("masterUsernameList");
+    private final CollectionReference USER_REFERENCE = db.collection("masterUserList");
     private final String KEY_USERNAME = "username";
     private final String KEY_UID = "uid";
 
@@ -68,6 +68,9 @@ public class MainMenuFragment extends Fragment {
         checkIfHasUsername();
     }
 
+    /**
+     * Sets all views for the fragment.
+     */
     private void initializeViews(View v) {
         buttonCreateRoom = v.findViewById(R.id.buttonMainCreateRoom);
         buttonJoinRoom = v.findViewById(R.id.buttonMainJoinRoom);
@@ -77,6 +80,9 @@ public class MainMenuFragment extends Fragment {
         progressBarMainMenu = v.findViewById(R.id.progressBarMainMenu);
     }
 
+    /**
+     * Sets all views to visibility GONE and sets the ProgressBar to VISIBLE.
+     */
     private void showProgressBar() {
         buttonCreateRoom.setVisibility(View.GONE);
         buttonJoinRoom.setVisibility(View.GONE);
@@ -86,10 +92,20 @@ public class MainMenuFragment extends Fragment {
         progressBarMainMenu.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Sets the ProgressBar's visibility to GONE. Should be used in conjunction with
+     * showUsernameElements() or showCreateUsernameElements() to provide appropriate views on the
+     * screen.
+     */
     private void hideProgressBar() {
         progressBarMainMenu.setVisibility(View.GONE);
     }
 
+    /**
+     * Sets the two views for the username sign up process (editTextUsername and buttonSetUsername)
+     * to GONE, and sets the other views to VISIBLE. Also enables the create and join room buttons.
+     * Used once the database confirms that the use has a username and can create or join rooms.
+     */
     private void showUsernameElements() {
         editTextUsername.setVisibility(View.GONE);
         buttonSetUsername.setVisibility(View.GONE);
@@ -103,6 +119,10 @@ public class MainMenuFragment extends Fragment {
         buttonJoinRoom.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Sets all views to VISIBLE and disables the create and join room buttons. Used once the
+     * database confirms that the user does not have a username and must create one.
+     */
     private void showCreateUsernameElements() {
         editTextUsername.setVisibility(View.VISIBLE);
         buttonSetUsername.setVisibility(View.VISIBLE);
@@ -135,12 +155,15 @@ public class MainMenuFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 if (editTextUsername.length() == 0) {
+                    // Did not enter a username.
                     Toast.makeText(getContext(), "Enter a username.", Toast.LENGTH_SHORT).show();
                 } else {
                     String enteredUsername = editTextUsername.getText().toString();
                     if (checkIfUsernameExists(enteredUsername)) {
+                        // Username exists.
                         Toast.makeText(getContext(), "This username already exists.", Toast.LENGTH_SHORT).show();
                     } else {
+                        // Create username in database.
                         showProgressBar();
                         Map<String, String> mapUsername = new HashMap<>();
                         mapUsername.put(KEY_USERNAME, enteredUsername);
@@ -158,12 +181,18 @@ public class MainMenuFragment extends Fragment {
         });
     }
 
+    /**
+     * Checks and returns if a username exists in the database.
+     */
     private boolean checkIfUsernameExists(String enteredUsername) {
         return USERNAME_REFERENCE.document(enteredUsername)
                 .get()
                 .isSuccessful();
     }
 
+    /**
+     * Checks if the user had a username registered in the database.
+     */
     private void checkIfHasUsername() {
         showProgressBar();
         USER_REFERENCE.document(uid)
@@ -182,6 +211,9 @@ public class MainMenuFragment extends Fragment {
                 });
     }
 
+    /**
+     * Retrieves and sets the username variable from database info.
+     */
     private void setUsername() {
         USER_REFERENCE.document(uid)
                 .get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
@@ -195,6 +227,8 @@ public class MainMenuFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Exception e) {
                 Toast.makeText(getContext(), "ERROR: Could not check database.", Toast.LENGTH_SHORT).show();
+                hideProgressBar();
+                showCreateUsernameElements();
             }
         });
     }
