@@ -13,6 +13,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+
 public class CreateRoomFragment extends Fragment {
     private String username;
 
@@ -49,18 +54,50 @@ public class CreateRoomFragment extends Fragment {
             public void onClick(View view) {
                 if (editTextRoomName.length() != 0 &&
                         editTextPassword.length() != 0) {
-                    // User entered a room name and password; finish CreateRoomActivity and start
-                    // MainPanelActivity.
-                    Intent intent = MainPanelActivity.newIntentForCreateRoom(getContext(),
-                            username,
-                            editTextRoomName.getText().toString(),
-                            editTextPassword.getText().toString());
-                    startActivity(intent);
+
+                    String password = editTextPassword.getText().toString();
+                    String roomName = editTextRoomName.getText().toString();
+
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+                    db.collection("masterRoomList")
+                            .document(editTextRoomName.getText().toString())
+                            .get()
+                            .addOnCompleteListener(new MasterRoomListSearchOnCompleteListener(
+                                    password, roomName));
                 } else {
                     // User did not enter a room name and/or password.
                     Toast.makeText(getContext(), "Fill out all fields.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
+    }
+
+    /**
+     * Listener for searching for a room in the masterRoomList collection.
+     */
+    private class MasterRoomListSearchOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
+        private final String password;
+        private final String roomName;
+
+        MasterRoomListSearchOnCompleteListener(String password, String roomName) {
+            this.password = password;
+            this.roomName = roomName;
+        }
+
+        @Override
+        public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+
+                if (document.exists()) {
+                    Toast.makeText(getContext(), "This room name already exists.", Toast.LENGTH_SHORT).show();
+                } else {
+                    // User entered a room name which does not exist and a password; finish CreateRoomActivity and start MainPanelActivity.
+                    Intent intent = MainPanelActivity.newIntentForCreateRoom(getContext(), username,
+                            roomName, password);
+                    startActivity(intent);
+                }
+            }
+        }
     }
 }

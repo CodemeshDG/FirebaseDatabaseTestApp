@@ -37,8 +37,13 @@ public class MainPanelActivity extends SingleFragmentActivity {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         Map<String, String> mapRoom = new HashMap<>();
-        mapRoom.put(KEY_PASSWORD, password);
         mapRoom.put(KEY_ROOM_NAME, roomName);
+
+        db.collection("masterRoomList")
+                .document(roomName)
+                .set(mapRoom);
+
+        mapRoom.put(KEY_PASSWORD, password);
         mapRoom.put(KEY_OWNER, username);
         Map<String, String> mapUsername = new HashMap<>();
         mapUsername.put(KEY_USERNAME, username);
