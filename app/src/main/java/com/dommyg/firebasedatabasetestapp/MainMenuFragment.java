@@ -53,7 +53,8 @@ public class MainMenuFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_main_menu, container, false);
 
         initializeViews(v);
@@ -161,7 +162,8 @@ public class MainMenuFragment extends Fragment {
                     String enteredUsername = editTextUsername.getText().toString();
                     if (checkIfUsernameExists(enteredUsername)) {
                         // Username exists.
-                        Toast.makeText(getContext(), "This username already exists.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "This username already exists.",
+                                Toast.LENGTH_SHORT).show();
                     } else {
                         // Create username in database.
                         showProgressBar();
@@ -171,6 +173,8 @@ public class MainMenuFragment extends Fragment {
                         Map<String, String> mapUid = new HashMap<>();
                         mapUid.put(KEY_UID, uid);
 
+                        // TODO: Turn this into a batch write? Or something that will wait until
+                        //  writing is complete before moving on to setUsername().
                         USERNAME_REFERENCE.document(enteredUsername).set(mapUid);
                         USER_REFERENCE.document(uid).set(mapUsername);
 
@@ -226,7 +230,8 @@ public class MainMenuFragment extends Fragment {
                 }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Toast.makeText(getContext(), "ERROR: Could not check database.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "ERROR: Could not check database.",
+                        Toast.LENGTH_SHORT).show();
                 hideProgressBar();
                 showCreateUsernameElements();
             }

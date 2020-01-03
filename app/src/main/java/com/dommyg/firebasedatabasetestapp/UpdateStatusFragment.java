@@ -42,7 +42,8 @@ public class UpdateStatusFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_update_status, container, false);
 
         setUpElements(v);
@@ -50,6 +51,9 @@ public class UpdateStatusFragment extends Fragment {
         return v;
     }
 
+    /**
+     * Sets up all the elements for updating the user's status.
+     */
     private void setUpElements(View v) {
         final RadioGroup radioGroupFeeling = v.findViewById(R.id.radioGroupFeeling);
 
@@ -78,6 +82,7 @@ public class UpdateStatusFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 if (selectedFeeling != 0) {
+                    // User selected a feeling and all data is being saved to the user's document.
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
 
                     String selectedFeelingString = Integer.toString(selectedFeeling);
@@ -96,9 +101,14 @@ public class UpdateStatusFragment extends Fragment {
 
                     mapStatus.put(KEY_BUSY, isBusy);
 
-                    db.collection("rooms").document(roomName).collection("users").document(username).set(mapStatus, SetOptions.merge());
+                    db.collection("rooms")
+                            .document(roomName)
+                            .collection("users")
+                            .document(username)
+                            .set(mapStatus, SetOptions.merge());
                     Objects.requireNonNull(getActivity()).finish();
                 } else {
+                    // User did not select a feeling.
                     Toast.makeText(getContext(), "Select a feeling.", Toast.LENGTH_SHORT).show();
                 }
             }

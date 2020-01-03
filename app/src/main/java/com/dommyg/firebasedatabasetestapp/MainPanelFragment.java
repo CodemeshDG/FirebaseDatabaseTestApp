@@ -34,6 +34,7 @@ public class MainPanelFragment extends Fragment {
         this.roomName = roomName;
         this.myUsername = myUsername;
         FirebaseFirestore db = FirebaseFirestore.getInstance();
+        // TODO: Do I need to add an onFailureListener here?
         this.usersReference = db.collection("rooms")
                 .document(roomName)
                 .collection("users");
@@ -41,7 +42,8 @@ public class MainPanelFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_main_panel, container, false);
 
         setUpElements(v);
@@ -50,17 +52,24 @@ public class MainPanelFragment extends Fragment {
         return v;
     }
 
+    /**
+     * Sets up the update status button at the bottom of the interface.
+     */
     private void setUpElements(View v) {
         Button buttonUpdateStatus = v.findViewById(R.id.buttonUpdateStatus);
         buttonUpdateStatus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(UpdateStatusActivity.newIntent(getContext(), roomName, myUsername));
+                Intent intent = new Intent(UpdateStatusActivity.newIntent(getContext(), roomName,
+                        myUsername));
                 startActivity(intent);
             }
         });
     }
 
+    /**
+     * Sets up the recyclerView for the room users' statuses.
+     */
     private void setUpStatusRecyclerView(View v) {
         Query query = usersReference;
 
@@ -74,7 +83,8 @@ public class MainPanelFragment extends Fragment {
                 recyclerViewStatus.setNestedScrollingEnabled(false);
                 recyclerViewStatus.setHasFixedSize(true);
 
-                RecyclerView.LayoutManager recyclerViewStatusLayoutManager = new LinearLayoutManager(getContext());
+                RecyclerView.LayoutManager recyclerViewStatusLayoutManager = new LinearLayoutManager(
+                        getContext());
 
                 recyclerViewStatus.setLayoutManager(recyclerViewStatusLayoutManager);
                 recyclerViewStatus.setAdapter(statusAdapter);

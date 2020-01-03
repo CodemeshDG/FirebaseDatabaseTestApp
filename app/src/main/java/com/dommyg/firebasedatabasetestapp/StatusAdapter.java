@@ -11,6 +11,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 
+/**
+ * Adapter for recyclerView provided by FirestoreUI. Displays user statuses.
+ */
 public class StatusAdapter extends FirestoreRecyclerAdapter<StatusItem, StatusAdapter.StatusViewHolder> {
 
     static class StatusViewHolder extends RecyclerView.ViewHolder {
@@ -27,14 +30,16 @@ public class StatusAdapter extends FirestoreRecyclerAdapter<StatusItem, StatusAd
     }
 
     @Override
-    protected void onBindViewHolder(@NonNull StatusViewHolder holder, int position, @NonNull StatusItem model) {
+    protected void onBindViewHolder(@NonNull StatusViewHolder holder, int position,
+                                    @NonNull StatusItem model) {
         holder.textViewStatus.setText(model.getStatus());
     }
 
     @NonNull
     @Override
     public StatusViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.fragment_status, parent, false);
+        View v = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.fragment_status, parent, false);
         return new StatusViewHolder(v);
     }
 

@@ -20,13 +20,14 @@ public class CreateRoomFragment extends Fragment {
         return new CreateRoomFragment(username);
     }
 
-    public CreateRoomFragment(String username) {
+    private CreateRoomFragment(String username) {
         this.username = username;
     }
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_create_room, container, false);
 
         setUpElements(v);
@@ -34,6 +35,9 @@ public class CreateRoomFragment extends Fragment {
         return v;
     }
 
+    /**
+     * Sets up all the elements for the create room process.
+     */
     private void setUpElements(View v) {
         final EditText editTextRoomName = v.findViewById(R.id.editTextRoomName);
         final EditText editTextPassword = v.findViewById(R.id.editTextPassword);
@@ -45,12 +49,15 @@ public class CreateRoomFragment extends Fragment {
             public void onClick(View view) {
                 if (editTextRoomName.length() != 0 &&
                         editTextPassword.length() != 0) {
+                    // User entered a room name and password; finish CreateRoomActivity and start
+                    // MainPanelActivity.
                     Intent intent = MainPanelActivity.newIntentForCreateRoom(getContext(),
                             username,
                             editTextRoomName.getText().toString(),
                             editTextPassword.getText().toString());
                     startActivity(intent);
                 } else {
+                    // User did not enter a room name and/or password.
                     Toast.makeText(getContext(), "Fill out all fields.", Toast.LENGTH_SHORT).show();
                 }
             }

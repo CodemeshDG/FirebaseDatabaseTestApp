@@ -5,6 +5,9 @@ import android.content.Intent;
 
 import androidx.fragment.app.Fragment;
 
+/**
+ * Provides the interface for joining an existing room.
+ */
 public class JoinRoomActivity extends SingleFragmentActivity {
     private static final String KEY_USERNAME = "username";
 

@@ -5,7 +5,9 @@ import android.content.Intent;
 
 import androidx.fragment.app.Fragment;
 
-
+/**
+ * Provides the interface for updating the user's status.
+ */
 public class UpdateStatusActivity extends SingleFragmentActivity {
     private static final String KEY_ROOM_NAME = "room_name";
     private static final String KEY_USERNAME = "username";

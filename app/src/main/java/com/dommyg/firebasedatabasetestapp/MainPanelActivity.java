@@ -11,10 +11,14 @@ import com.google.firebase.firestore.SetOptions;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Provides the interface for reading all room users' statuses and updating ones own.
+ */
 public class MainPanelActivity extends SingleFragmentActivity {
-    static final String KEY_USERNAME = "username";
+    private static final String KEY_USERNAME = "username";
     private static final String KEY_ROOM_NAME = "room_name";
     static final String KEY_PASSWORD = "password";
+    private static final String KEY_OWNER = "owner";
 
     @Override
     protected Fragment createFragment() {
@@ -23,24 +27,25 @@ public class MainPanelActivity extends SingleFragmentActivity {
         return MainPanelFragment.newInstance(roomName, username);
     }
 
+    /**
+     * Used for when the user is creating a new room. Creates a new room document in the database's
+     * "rooms" collection, setting the name of the room, the password, and the owner of the room.
+     * Finally, creates and returns an intent for a new MainPanelActivity.
+     */
     public static Intent newIntentForCreateRoom(Context packageContext, String username, String roomName,
                                    String password) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        Map<String, String> mapPassword = new HashMap<>();
-        mapPassword.put(KEY_PASSWORD, password);
+        Map<String, String> mapRoom = new HashMap<>();
+        mapRoom.put(KEY_PASSWORD, password);
+        mapRoom.put(KEY_ROOM_NAME, roomName);
+        mapRoom.put(KEY_OWNER, username);
         Map<String, String> mapUsername = new HashMap<>();
         mapUsername.put(KEY_USERNAME, username);
-        Map<String, String> mapRoomName = new HashMap<>();
-        mapPassword.put(KEY_ROOM_NAME, roomName);
 
         db.collection("rooms")
                 .document(roomName)
-                .set(mapRoomName);
-
-        db.collection("rooms")
-                .document(roomName)
-                .set(mapPassword);
+                .set(mapRoom);
 
         db.collection("rooms")
                 .document(roomName)
@@ -54,6 +59,11 @@ public class MainPanelActivity extends SingleFragmentActivity {
         return intent;
     }
 
+    /**
+     * Used for when the user is joining an existing room. Creates a new user document in the room's
+     * "user" collection, setting just the name of the user in the document. Then, creates and
+     * returns an intent for a new MainPanelActivity.
+     */
     public static Intent newIntentForJoinRoom(Context packageContext, String username, String roomName) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 

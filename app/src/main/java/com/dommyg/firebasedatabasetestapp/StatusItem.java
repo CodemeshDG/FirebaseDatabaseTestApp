@@ -1,5 +1,8 @@
 package com.dommyg.firebasedatabasetestapp;
 
+/**
+ * Contains information for a user's status.
+ */
 class StatusItem {
 
     private String username;
@@ -43,6 +46,11 @@ class StatusItem {
         isBusy = busy;
     }
 
+    /**
+     * Returns a String which reports a user's status. If the user has just joined the room, they
+     * will not have a feeling set, and thus will return a string stating they have not updated their
+     * status yet.
+     */
     String getStatus() {
         if (feeling != null) {
             return createStatus(username, Integer.valueOf(feeling), location, isBusy);
@@ -50,6 +58,9 @@ class StatusItem {
         return username + " - I have not updated my status yet.";
     }
 
+    /**
+     * Constructs and returns a String based on the user status variables.
+     */
     private String createStatus(String username, int feeling, String location, boolean isBusy) {
         StringBuilder sb = new StringBuilder();
         sb.append(username).append(" - ");
