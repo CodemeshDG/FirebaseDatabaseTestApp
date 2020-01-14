@@ -19,6 +19,7 @@
                 android:id="@+id/imageViewRoomStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:contentDescription="You are a participant in this room."
                 android:src="@drawable/ic_participant_black_24dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -27,6 +28,7 @@
                 android:id="@+id/imageViewLeaveRoom"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:contentDescription="Leave room button."
                 android:src="@drawable/ic_leave_or_delete_black_24dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />

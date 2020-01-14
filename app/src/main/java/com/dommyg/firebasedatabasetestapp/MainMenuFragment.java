@@ -226,7 +226,7 @@ public class MainMenuFragment extends Fragment {
                 .setQuery(query, JoinedRoomItem.class)
                 .build();
 
-        joinedRoomAdapter = new JoinedRoomAdapter(options, getResources());
+        joinedRoomAdapter = new JoinedRoomAdapter(options, getResources(), this);
 
         recyclerViewJoinedRooms = v.findViewById(R.id.recyclerViewJoinedRooms);
 
@@ -302,5 +302,9 @@ public class MainMenuFragment extends Fragment {
                 showCreateUsernameElements();
             }
         });
+    }
+
+    String getUsername() {
+        return username;
     }
 }

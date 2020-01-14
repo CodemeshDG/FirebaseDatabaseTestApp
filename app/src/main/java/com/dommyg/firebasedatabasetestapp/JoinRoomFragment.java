@@ -78,31 +78,8 @@ public class JoinRoomFragment extends Fragment {
                     final String roomName = editTextRoomName.getText().toString();
                     final String password = editTextPassword.getText().toString();
 
-                    Map<String, String> mapInputPassword = new HashMap<>();
-                    mapInputPassword.put(KEY_INPUT_PASSWORD, password);
-
-                    // The password which the user input must be stored for database security check.
-                    userReference.document(Objects.requireNonNull(FirebaseAuth
-                            .getInstance()
-                            .getUid()))
-                            .set(mapInputPassword, SetOptions.merge())
-                            .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                @Override
-                                public void onSuccess(Void aVoid) {
-                                    // Password was able to be stored.
-                                    roomsReference.document(roomName).get()
-                                            .addOnCompleteListener(new RoomSearchOnCompleteListener(
-                                                    password, roomName));
-                                }
-                            }).addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            // Password was not able to be stored.
-                            Toast.makeText(getContext(), "ERROR: Could not access database.",
-                                    Toast.LENGTH_SHORT).show();
-                            e.printStackTrace();
-                        }
-                    });
+                    new RoomController(username, password, roomName,
+                            getContext()).joinRoom();
                 } else {
                     // User did not fill out all required fields.
                     Toast.makeText(getContext(), "Fill out all fields.",

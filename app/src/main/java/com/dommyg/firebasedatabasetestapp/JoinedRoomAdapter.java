@@ -1,5 +1,6 @@
 package com.dommyg.firebasedatabasetestapp;
 
+import android.content.Context;
 import android.content.res.Resources;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +17,7 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 public class JoinedRoomAdapter extends FirestoreRecyclerAdapter<JoinedRoomItem,
         JoinedRoomAdapter.JoinedRoomViewHolder> {
     private Resources resources;
+    private MainMenuFragment mainMenuFragment;
 
     static class JoinedRoomViewHolder extends RecyclerView.ViewHolder {
         TextView textViewRoomName;
@@ -30,9 +32,11 @@ public class JoinedRoomAdapter extends FirestoreRecyclerAdapter<JoinedRoomItem,
         }
     }
 
-    JoinedRoomAdapter(@NonNull FirestoreRecyclerOptions<JoinedRoomItem> options, Resources resources) {
+    JoinedRoomAdapter(@NonNull FirestoreRecyclerOptions<JoinedRoomItem> options, Resources resources,
+                      MainMenuFragment mainMenuFragment) {
         super(options);
         this.resources = resources;
+        this.mainMenuFragment = mainMenuFragment;
     }
 
     @Override
@@ -42,6 +46,18 @@ public class JoinedRoomAdapter extends FirestoreRecyclerAdapter<JoinedRoomItem,
         if (model.getIsOwner()) {
             holder.imageViewRoomStatus.setImageDrawable(resources.getDrawable(R.drawable.ic_owner_black_24dp));
         }
+
+        final String roomName = model.getRoomName();
+        final String password = model.getPassword();
+
+        holder.textViewRoomName.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                new RoomController(mainMenuFragment.getUsername(), password, roomName,
+                        mainMenuFragment.getContext()).joinRoom();
+            }
+        });
     }
 
     @NonNull
