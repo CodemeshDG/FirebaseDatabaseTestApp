@@ -24,7 +24,7 @@ import java.util.Objects;
 public class UpdateStatusFragment extends Fragment {
     private static final String KEY_FEELING = "feeling";
     private static final String KEY_LOCATION = "location";
-    private static final String KEY_BUSY = "is_busy";
+    private static final String KEY_BUSY = "isBusy";
 
     private int selectedFeeling;
     private String roomName;

@@ -51,4 +51,27 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:indeterminate="true" />
+
+    <TextView
+        android:id="@+id/textViewRejoinYourRooms"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="REJOIN YOUR ROOMS"
+        android:textAlignment="center"
+        android:textColor="#1976D2"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/textViewNoRoomsMsg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="You have not joined any rooms yet..."
+        android:textSize="16sp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewJoinedRooms"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="8dp" />
 </LinearLayout>

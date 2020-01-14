@@ -38,11 +38,11 @@ class StatusItem {
         this.location = location;
     }
 
-    public boolean isBusy() {
+    public boolean getIsBusy() {
         return isBusy;
     }
 
-    public void setBusy(boolean busy) {
+    public void setIsBusy(boolean busy) {
         isBusy = busy;
     }
 

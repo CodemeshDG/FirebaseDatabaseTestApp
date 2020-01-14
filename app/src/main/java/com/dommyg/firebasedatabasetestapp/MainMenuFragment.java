@@ -14,21 +14,25 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainMenuFragment extends Fragment {
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private final CollectionReference USERNAME_REFERENCE = db.collection("masterUsernameList");
-    private final CollectionReference USER_REFERENCE = db.collection("masterUserList");
+    private final CollectionReference usernameReference = db.collection("masterUsernameList");
+    private final CollectionReference userReference = db.collection("masterUserList");
     private final String KEY_USERNAME = "username";
     private final String KEY_UID = "uid";
 
@@ -39,13 +43,23 @@ public class MainMenuFragment extends Fragment {
     private Button buttonSetUsername;
 
     private TextView textViewUsername;
+    private TextView textViewRejoinYourRooms;
+    private TextView textViewNoRoomsMsg;
 
     private EditText editTextUsername;
 
     private ProgressBar progressBarMainMenu;
 
+    private JoinedRoomAdapter joinedRoomAdapter;
+    private RecyclerView recyclerViewJoinedRooms;
+
     private String username;
     private String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+    private CollectionReference joinedRoomsReference = userReference
+            .document(uid)
+            .collection("joinedRooms");
+
 
     public static MainMenuFragment newInstance() {
         return new MainMenuFragment();
@@ -59,6 +73,7 @@ public class MainMenuFragment extends Fragment {
 
         initializeViews(v);
         setUpButtons();
+        setUpJoinedRoomsRecyclerView(v);
 
         return v;
     }
@@ -66,7 +81,14 @@ public class MainMenuFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
+        joinedRoomAdapter.startListening();
         checkIfHasUsername();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        joinedRoomAdapter.stopListening();
     }
 
     /**
@@ -78,6 +100,8 @@ public class MainMenuFragment extends Fragment {
         buttonSetUsername = v.findViewById(R.id.buttonSetUsername);
         textViewUsername = v.findViewById(R.id.textViewUsername);
         editTextUsername = v.findViewById(R.id.editTextUsername);
+        textViewNoRoomsMsg = v.findViewById(R.id.textViewNoRoomsMsg);
+        textViewRejoinYourRooms = v.findViewById(R.id.textViewRejoinYourRooms);
         progressBarMainMenu = v.findViewById(R.id.progressBarMainMenu);
     }
 
@@ -90,6 +114,9 @@ public class MainMenuFragment extends Fragment {
         buttonSetUsername.setVisibility(View.GONE);
         textViewUsername.setVisibility(View.GONE);
         editTextUsername.setVisibility(View.GONE);
+        textViewNoRoomsMsg.setVisibility(View.GONE);
+        textViewRejoinYourRooms.setVisibility(View.GONE);
+        recyclerViewJoinedRooms.setVisibility(View.GONE);
         progressBarMainMenu.setVisibility(View.VISIBLE);
     }
 
@@ -113,11 +140,14 @@ public class MainMenuFragment extends Fragment {
 
         textViewUsername.setText("Welcome " + username + "!");
         textViewUsername.setVisibility(View.VISIBLE);
+        textViewRejoinYourRooms.setVisibility(View.VISIBLE);
 
         buttonCreateRoom.setEnabled(true);
         buttonJoinRoom.setEnabled(true);
         buttonCreateRoom.setVisibility(View.VISIBLE);
         buttonJoinRoom.setVisibility(View.VISIBLE);
+
+        checkIfJoinedRoomsExist();
     }
 
     /**
@@ -175,8 +205,8 @@ public class MainMenuFragment extends Fragment {
 
                         // TODO: Turn this into a batch write? Or something that will wait until
                         //  writing is complete before moving on to setUsername().
-                        USERNAME_REFERENCE.document(enteredUsername).set(mapUid);
-                        USER_REFERENCE.document(uid).set(mapUsername);
+                        usernameReference.document(enteredUsername).set(mapUid);
+                        userReference.document(uid).set(mapUsername);
 
                         setUsername();
                     }
@@ -186,10 +216,46 @@ public class MainMenuFragment extends Fragment {
     }
 
     /**
+     * Sets up the recyclerView to display the rooms the user belongs to.
+     */
+    private void setUpJoinedRoomsRecyclerView(View v) {
+        Query query = joinedRoomsReference;
+
+        FirestoreRecyclerOptions<JoinedRoomItem> options = new FirestoreRecyclerOptions
+                .Builder<JoinedRoomItem>()
+                .setQuery(query, JoinedRoomItem.class)
+                .build();
+
+        joinedRoomAdapter = new JoinedRoomAdapter(options, getResources());
+
+        recyclerViewJoinedRooms = v.findViewById(R.id.recyclerViewJoinedRooms);
+
+        RecyclerView.LayoutManager recyclerViewJoinedRoomsLayoutManager = new LinearLayoutManager(
+                getContext());
+
+        recyclerViewJoinedRooms.setLayoutManager(recyclerViewJoinedRoomsLayoutManager);
+        recyclerViewJoinedRooms.setAdapter(joinedRoomAdapter);
+    }
+
+    /**
+     * Checks if the user has any previously joined rooms and appropriately sets visibility of the
+     * recyclerView.
+     */
+    private void checkIfJoinedRoomsExist() {
+        if (joinedRoomAdapter.getItemCount() > 0) {
+            textViewNoRoomsMsg.setVisibility(View.GONE);
+            recyclerViewJoinedRooms.setVisibility(View.VISIBLE);
+        } else {
+            recyclerViewJoinedRooms.setVisibility(View.GONE);
+            textViewNoRoomsMsg.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
      * Checks and returns if a username exists in the database.
      */
     private boolean checkIfUsernameExists(String enteredUsername) {
-        return USERNAME_REFERENCE.document(enteredUsername)
+        return usernameReference.document(enteredUsername)
                 .get()
                 .isSuccessful();
     }
@@ -199,7 +265,7 @@ public class MainMenuFragment extends Fragment {
      */
     private void checkIfHasUsername() {
         showProgressBar();
-        USER_REFERENCE.document(uid)
+        userReference.document(uid)
                 .get()
                 .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
@@ -219,7 +285,7 @@ public class MainMenuFragment extends Fragment {
      * Retrieves and sets the username variable from database info.
      */
     private void setUsername() {
-        USER_REFERENCE.document(uid)
+        userReference.document(uid)
                 .get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
                     public void onSuccess(DocumentSnapshot documentSnapshot) {

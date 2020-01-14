@@ -136,7 +136,8 @@ public class JoinRoomFragment extends Fragment {
                         // Password is correct; start the MainPanelActivity.
                         Intent intent = MainPanelActivity.newIntentForJoinRoom(getContext(),
                                 username,
-                                roomName);
+                                roomName,
+                                password);
                         startActivity(intent);
                     } else {
                         // User entered the wrong password for the room.

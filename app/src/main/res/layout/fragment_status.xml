@@ -10,19 +10,19 @@
     app:cardCornerRadius="4dp"
     app:cardUseCompatPadding="true">
 
-<RelativeLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_margin="4dp">
-
-        <TextView
-            android:id="@+id/textViewStatus"
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="30sp"
-            android:textColor="@android:color/black"
-            tools:text="DDR189 - I am feeling happy. I am at the supermarket. I am not busy." />
+            android:layout_height="match_parent"
+            android:layout_margin="4dp">
 
-</RelativeLayout>
+                <TextView
+                    android:id="@+id/textViewStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="30sp"
+                    android:textColor="@android:color/black"
+                    tools:text="DDR189 - I am feeling happy. I am at the supermarket. I am not busy." />
+
+        </RelativeLayout>
 
 </androidx.cardview.widget.CardView>
