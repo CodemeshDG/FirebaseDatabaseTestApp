@@ -54,7 +54,7 @@ class RoomController {
                     public void onSuccess(Void aVoid) {
                         // Password was able to be stored.
                         roomsReference.document(roomName).get()
-                                .addOnCompleteListener(new RoomSearchOnCompleteListener(
+                                .addOnCompleteListener(new RoomJoinOnCompleteListener(
                                         password, roomName, context));
                     }
                 }).addOnFailureListener(new OnFailureListener() {
@@ -68,15 +68,43 @@ class RoomController {
         });
     }
 
+    void leaveRoom() {
+        Map<String, String> mapInputPassword = new HashMap<>();
+        mapInputPassword.put(KEY_INPUT_PASSWORD, password);
+
+        userReference.document(Objects.requireNonNull(FirebaseAuth
+                .getInstance()
+                .getUid()))
+                .set(mapInputPassword, SetOptions.merge())
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                roomsReference.document(roomName)
+                        .collection("users")
+                        .document(username)
+                        .delete()
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                userReference.document(FirebaseAuth.getInstance().getUid())
+                                        .collection("joinedRooms")
+                                        .document(roomName)
+                                        .delete();
+                            }
+                        });
+            }
+        });
+    }
+
     /**
      * Listener for searching for a room in the database.
      */
-    private class RoomSearchOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
+    private class RoomJoinOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
         private final String password;
         private final String roomName;
         private final Context context;
 
-        RoomSearchOnCompleteListener(String password, String editTextRoomName, Context context) {
+        RoomJoinOnCompleteListener(String password, String editTextRoomName, Context context) {
             this.password = password;
             this.roomName = editTextRoomName;
             this.context = context;
