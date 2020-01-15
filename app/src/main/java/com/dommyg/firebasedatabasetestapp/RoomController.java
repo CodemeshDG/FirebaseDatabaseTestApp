@@ -2,6 +2,7 @@ package com.dommyg.firebasedatabasetestapp;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -21,7 +22,13 @@ import java.util.Map;
 import java.util.Objects;
 
 class RoomController {
-    private final String KEY_INPUT_PASSWORD = "inputPassword";
+    private static final String TAG = "RoomController";
+
+    private static final String KEY_INPUT_PASSWORD = "inputPassword";
+
+    private static final int KEY_JOIN = 1;
+    private static final int KEY_LEAVE = 2;
+    private static final int KEY_DELETE = 3;
 
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CollectionReference roomsReference = db.collection("rooms");
@@ -40,78 +47,99 @@ class RoomController {
         this.context = context;
     }
 
+    /**
+     * Processes a request to join a room.
+     */
     void joinRoom() {
-        Map<String, String> mapInputPassword = new HashMap<>();
-        mapInputPassword.put(KEY_INPUT_PASSWORD, password);
-
-        // The password which the user input must be stored for database security check.
-        userReference.document(Objects.requireNonNull(FirebaseAuth
-                .getInstance()
-                .getUid()))
-                .set(mapInputPassword, SetOptions.merge())
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        // Password was able to be stored.
-                        roomsReference.document(roomName).get()
-                                .addOnCompleteListener(new RoomJoinOnCompleteListener(
-                                        password, roomName, context));
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                // Password was not able to be stored.
-                Toast.makeText(context, "ERROR: Could not access database.",
-                        Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
-            }
-        });
-    }
-
-    void leaveRoom() {
-        Map<String, String> mapInputPassword = new HashMap<>();
-        mapInputPassword.put(KEY_INPUT_PASSWORD, password);
-
-        userReference.document(Objects.requireNonNull(FirebaseAuth
-                .getInstance()
-                .getUid()))
-                .set(mapInputPassword, SetOptions.merge())
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-            @Override
-            public void onSuccess(Void aVoid) {
-                roomsReference.document(roomName)
-                        .collection("users")
-                        .document(username)
-                        .delete()
-                        .addOnSuccessListener(new OnSuccessListener<Void>() {
-                            @Override
-                            public void onSuccess(Void aVoid) {
-                                userReference.document(FirebaseAuth.getInstance().getUid())
-                                        .collection("joinedRooms")
-                                        .document(roomName)
-                                        .delete();
-                            }
-                        });
-            }
-        });
+        setInputPassword(KEY_JOIN);
     }
 
     /**
-     * Listener for searching for a room in the database.
+     * Processes a request to leave a room.
      */
-    private class RoomJoinOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
-        private final String password;
-        private final String roomName;
-        private final Context context;
+    void leaveRoom() {
+        setInputPassword(KEY_LEAVE);
+    }
 
-        RoomJoinOnCompleteListener(String password, String editTextRoomName, Context context) {
-            this.password = password;
-            this.roomName = editTextRoomName;
-            this.context = context;
+    /**
+     * Sets the "inputPassword" field for the user so that they may read and write to certain documents
+     * in the room.
+     */
+    private void setInputPassword(int command) {
+        Map<String, String> mapInputPassword = new HashMap<>();
+        mapInputPassword.put(KEY_INPUT_PASSWORD, password);
+
+        userReference.document(Objects.requireNonNull(FirebaseAuth
+                .getInstance()
+                .getUid()))
+                .set(mapInputPassword, SetOptions.merge())
+                .addOnSuccessListener(new InputPasswordOnSuccessListener(command))
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Password was not able to be stored.
+                        Toast.makeText(context, "Error accessing database.",
+                                Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "onFailure: " + e);
+                    }
+                });
+    }
+
+    /**
+     * Listens for success on modifying the user's "inputPassword" field, and then takes appropriate
+     * action based upon the user's request (joining, leaving, or deleting room).
+     */
+    private class InputPasswordOnSuccessListener implements OnSuccessListener<Void> {
+        private int command;
+
+        InputPasswordOnSuccessListener(int command) {
+            this.command = command;
         }
 
         @Override
+        public void onSuccess(Void aVoid) {
+            switch (command) {
+                case KEY_JOIN:
+                    // Password was able to be stored; search for room.
+                    roomsReference.document(roomName).get()
+                            .addOnCompleteListener(new RoomJoinOnCompleteListener());
+                    break;
+
+                case KEY_LEAVE:
+                    // Password was able to be stored; delete user from room.
+                    roomsReference.document(roomName)
+                            .collection("users")
+                            .document(username)
+                            .delete()
+                            .addOnSuccessListener(new RoomLeaveOnSuccessListener())
+                            .addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    // User was not able to be deleted from room.
+                                    Toast.makeText(context, "Error trying to leave room.",
+                                            Toast.LENGTH_SHORT).show();
+                                    Log.d(TAG, "onFailure: " + e);
+                                }
+                            });
+                    break;
+
+                case KEY_DELETE:
+                    // TODO: Add delete room functionality for room owners.
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Listens for completion of searching for a room in the database, and then attempts to join it
+     * if it exists.
+     */
+    private class RoomJoinOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
+
+        @Override
         public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+            // TODO: See if more accurate errors can be reported based upon current database security
+            //  rules. Use onSuccessListener instead?
             if (task.isSuccessful()) {
                 // Was able to search for room.
                 DocumentSnapshot document = task.getResult();
@@ -139,9 +167,26 @@ class RoomController {
                 // Could not search for rooms for some reason.
                 Toast.makeText(context, "ERROR: Could not search for room.",
                         Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "onComplete: " + task.getException());
             }
         }
     }
+
+    /**
+     * Listens for success of deleting oneself from a room, and then deletes the room from the
+     * user's "joinedRooms" collection.
+     */
+    private class RoomLeaveOnSuccessListener implements OnSuccessListener<Void> {
+
+        @Override
+        public void onSuccess(Void aVoid) {
+            userReference.document(FirebaseAuth.getInstance().getUid())
+                    .collection("joinedRooms")
+                    .document(roomName)
+                    .delete();
+        }
+    }
 }
+
 
 
