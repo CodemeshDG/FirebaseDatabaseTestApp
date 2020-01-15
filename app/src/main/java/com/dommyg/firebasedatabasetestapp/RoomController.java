@@ -26,9 +26,10 @@ class RoomController {
 
     private static final String KEY_INPUT_PASSWORD = "inputPassword";
 
-    private static final int KEY_JOIN = 1;
-    private static final int KEY_LEAVE = 2;
-    private static final int KEY_DELETE = 3;
+    private static final int CODE_JOIN = 1;
+    private static final int CODE_LEAVE = 2;
+    private static final int CODE_DELETE = 3;
+    private static final int CODE_CHANGE_PASSWORD = 4;
 
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CollectionReference roomsReference = db.collection("rooms");
@@ -51,14 +52,14 @@ class RoomController {
      * Processes a request to join a room.
      */
     void joinRoom() {
-        setInputPassword(KEY_JOIN);
+        setInputPassword(CODE_JOIN);
     }
 
     /**
      * Processes a request to leave a room.
      */
     void leaveRoom() {
-        setInputPassword(KEY_LEAVE);
+        setInputPassword(CODE_LEAVE);
     }
 
     /**
@@ -74,15 +75,7 @@ class RoomController {
                 .getUid()))
                 .set(mapInputPassword, SetOptions.merge())
                 .addOnSuccessListener(new InputPasswordOnSuccessListener(command))
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        // Password was not able to be stored.
-                        Toast.makeText(context, "Error accessing database.",
-                                Toast.LENGTH_SHORT).show();
-                        Log.d(TAG, "onFailure: " + e);
-                    }
-                });
+                .addOnFailureListener(new ActionFailureListener(command));
     }
 
     /**
@@ -99,33 +92,24 @@ class RoomController {
         @Override
         public void onSuccess(Void aVoid) {
             switch (command) {
-                case KEY_JOIN:
+                case CODE_JOIN:
                     // Password was able to be stored; search for room.
                     roomsReference.document(roomName).get()
                             .addOnCompleteListener(new RoomJoinOnCompleteListener());
                     break;
 
-                case KEY_LEAVE:
+                case CODE_LEAVE:
                     // Password was able to be stored; delete user from room.
                     roomsReference.document(roomName)
                             .collection("users")
                             .document(username)
                             .delete()
                             .addOnSuccessListener(new RoomLeaveOnSuccessListener())
-                            .addOnFailureListener(new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
-                                    // User was not able to be deleted from room.
-                                    Toast.makeText(context, "Error trying to leave room.",
-                                            Toast.LENGTH_SHORT).show();
-                                    Log.d(TAG, "onFailure: " + e);
-                                }
-                            });
+                            .addOnFailureListener(new ActionFailureListener(command));
                     break;
 
-                case KEY_DELETE:
+                case CODE_DELETE:
                     // TODO: Add delete room functionality for room owners.
-                    break;
             }
         }
     }
@@ -184,6 +168,39 @@ class RoomController {
                     .collection("joinedRooms")
                     .document(roomName)
                     .delete();
+        }
+    }
+
+    /**
+     * Listens for action failures in the RoomController class and provides the appropriate Toast
+     * message for the user.
+     */
+    private class ActionFailureListener implements OnFailureListener {
+        private String failureMessage;
+
+        ActionFailureListener(int errorCode) {
+            switch (errorCode) {
+                case CODE_JOIN:
+                    failureMessage = "Error searching for room.";
+                    break;
+
+                case CODE_LEAVE:
+                    failureMessage = "Error trying to leave room.";
+                    break;
+
+                case CODE_DELETE:
+                    failureMessage = "Error trying to delete room.";
+                    break;
+
+                case CODE_CHANGE_PASSWORD:
+                    failureMessage = "Error accessing database.";
+            }
+        }
+
+        @Override
+        public void onFailure(@NonNull Exception e) {
+            Toast.makeText(context, failureMessage, Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "onFailure: " + e);
         }
     }
 }
