@@ -93,9 +93,7 @@ public class CreateRoomFragment extends Fragment {
                     Toast.makeText(getContext(), "This room name already exists.", Toast.LENGTH_SHORT).show();
                 } else {
                     // User entered a room name which does not exist and a password; finish CreateRoomActivity and start MainPanelActivity.
-                    Intent intent = MainPanelActivity.newIntentForCreateRoom(getContext(), username,
-                            roomName, password);
-                    startActivity(intent);
+                    new RoomController(username, password, roomName, getContext()).createRoom();
                 }
             }
         }

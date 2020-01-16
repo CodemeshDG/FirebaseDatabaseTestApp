@@ -33,34 +33,8 @@ public class MainPanelActivity extends SingleFragmentActivity {
      * "rooms" collection, setting the name of the room, the password, and the owner of the room.
      * Finally, creates and returns an intent for a new MainPanelActivity.
      */
-    public static Intent newIntentForCreateRoom(Context packageContext, String username, String roomName,
-                                   String password) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        Map<String, String> mapRoom = new HashMap<>();
-        mapRoom.put(KEY_ROOM_NAME, roomName);
-
-        db.collection("masterRoomList")
-                .document(roomName)
-                .set(mapRoom);
-
-        mapRoom.put(KEY_PASSWORD, password);
-        mapRoom.put(KEY_OWNER, username);
-        Map<String, String> mapUsername = new HashMap<>();
-        mapUsername.put(KEY_USERNAME, username);
-
-        db.collection("rooms")
-                .document(roomName)
-                .set(mapRoom);
-
-        db.collection("rooms")
-                .document(roomName)
-                .collection("users")
-                .document(username)
-                .set(mapUsername);
-
-        storeRoomInfoForUser(db, roomName, password, true);
-
+    public static Intent newIntentForCreateRoom(Context packageContext, String username,
+                                                String roomName) {
         Intent intent = new Intent(packageContext, MainPanelActivity.class);
         intent.putExtra(KEY_USERNAME, username);
         intent.putExtra(KEY_ROOM_NAME, roomName);

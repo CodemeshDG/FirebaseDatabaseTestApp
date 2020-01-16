@@ -1,6 +1,5 @@
 package com.dommyg.firebasedatabasetestapp;
 
-import android.content.Context;
 import android.content.res.Resources;
 import android.view.LayoutInflater;
 import android.view.View;
