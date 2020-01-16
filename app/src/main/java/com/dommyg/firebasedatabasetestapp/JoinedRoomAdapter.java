@@ -52,7 +52,7 @@ public class JoinedRoomAdapter extends FirestoreRecyclerAdapter<JoinedRoomItem,
         holder.textViewRoomName.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new RoomController(mainMenuFragment.getUsername(), password, roomName,
+                new RoomController(mainMenuFragment.getUsername(), password, roomName, false,
                         mainMenuFragment.getContext()).joinRoom();
             }
         });
@@ -60,7 +60,7 @@ public class JoinedRoomAdapter extends FirestoreRecyclerAdapter<JoinedRoomItem,
         holder.imageViewLeaveRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new RoomController(mainMenuFragment.getUsername(), password, roomName,
+                new RoomController(mainMenuFragment.getUsername(), password, roomName, false,
                         mainMenuFragment.getContext()).leaveRoom();
             }
         });

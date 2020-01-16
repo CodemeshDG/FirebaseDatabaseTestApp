@@ -16,10 +16,10 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 class RoomController {
     private static final String TAG = "RoomController";
@@ -27,7 +27,7 @@ class RoomController {
     private static final String KEY_INPUT_PASSWORD = "inputPassword";
     private static final String KEY_USERNAME = "username";
     private static final String KEY_ROOM_NAME = "roomName";
-    static final String KEY_PASSWORD = "password";
+    private static final String KEY_PASSWORD = "password";
     private static final String KEY_OWNER = "owner";
     private static final String KEY_IS_OWNER = "isOwner";
 
@@ -39,25 +39,80 @@ class RoomController {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final CollectionReference roomsReference = db.collection("rooms");
-    private final CollectionReference userReference = db.collection("masterUserList");
+    private final CollectionReference masterUserReference = db.collection("masterUserList");
+    private final CollectionReference masterRoomReference = db.collection("masterRoomList");
 
     private final String uid = FirebaseAuth.getInstance().getUid();
 
     private final String username;
     private final String password;
     private final String roomName;
+    private final boolean newJoin;
 
     private final Context context;
 
-    RoomController(String username, String password, String roomName, Context context) {
+    RoomController(String username, String password, String roomName, boolean newJoin,
+                   Context context) {
         this.username = username;
         this.password = password;
         this.roomName = roomName;
+        this.newJoin = newJoin;
         this.context = context;
     }
 
+    /**
+     * Processes a request to create a room.
+     */
     void createRoom() {
-        setRoomNameInMasterList(CODE_CREATE);
+        // Creating a room can be done with one batch write and no intermediate database actions,
+        // unlike joining, leaving, or deleting a room.
+        WriteBatch creationBatch = db.batch();
+
+        // Stores the room name in the "masterRoomList" collection for future querying (to prevent
+        // someone from making a room with the same name and overwriting this room's data).
+        Map<String, String> mapRoom = new HashMap<>();
+        mapRoom.put(KEY_ROOM_NAME, roomName);
+
+        creationBatch.set(masterRoomReference.document(roomName), mapRoom);
+
+        // Creates the room document in the "rooms" collection, storing its name, password, and
+        // owner, which allows for other users to join with a password and enables the owner to
+        // delete the room rather than leave.
+        mapRoom.put(KEY_PASSWORD, password);
+        mapRoom.put(KEY_OWNER, username);
+
+        creationBatch.set(roomsReference.document(roomName), mapRoom);
+
+        // Creates the "users" collection in the room's document and adds the owner as the first user.
+        // This document holds information related to the user's status once the user updates their
+        // status.
+        Map<String, String> mapUsername = new HashMap<>();
+        mapUsername.put(KEY_USERNAME, username);
+
+        creationBatch.set(roomsReference
+                .document(roomName)
+                .collection("users")
+                .document(username),
+                mapUsername);
+
+        // Stores into the user's "joinedRooms" collection the room name of the room being joined, its
+        // password, and if the user is the room's owner. This allows for rejoining without inputting a
+        // password in the future from the main menu, as well as appropriate actions for disengagement
+        // with the room (leaving room for non-owners and deleting the room for owners).
+        Map<String, Object> mapRoomInfo = new HashMap<>();
+        mapRoomInfo.put(KEY_ROOM_NAME, roomName);
+        mapRoomInfo.put(KEY_PASSWORD, password);
+        mapRoomInfo.put(KEY_IS_OWNER, true);
+
+        creationBatch.set(masterUserReference
+                .document(uid)
+                .collection("joinedRooms")
+                .document(roomName),
+                mapRoomInfo);
+
+        creationBatch.commit()
+                .addOnSuccessListener(new BatchedWriteCreateRoomOnSuccessListener())
+                .addOnFailureListener(new ActionFailureListener(CODE_CREATE));
     }
 
     /**
@@ -74,52 +129,21 @@ class RoomController {
         setInputPassword(CODE_LEAVE);
     }
 
+    void deleteRoom() {
+        setInputPassword(CODE_DELETE);
+    }
+
     /**
      * Sets the "inputPassword" field for the user so that they may read and write to certain documents
-     * in the room.
+     * in the room. This is a required set to join, leave, or delete a room.
      */
     private void setInputPassword(int command) {
         Map<String, String> mapInputPassword = new HashMap<>();
         mapInputPassword.put(KEY_INPUT_PASSWORD, password);
 
-        userReference.document(Objects.requireNonNull(FirebaseAuth
-                .getInstance()
-                .getUid()))
+        masterUserReference.document(uid)
                 .set(mapInputPassword, SetOptions.merge())
-                .addOnSuccessListener(new InputPasswordOnSuccessListener(command))
-                .addOnFailureListener(new ActionFailureListener(command));
-    }
-
-    private void setRoomNameInMasterList(int command) {
-        Map<String, String> mapRoom = new HashMap<>();
-        mapRoom.put(KEY_ROOM_NAME, roomName);
-
-        db.collection("masterRoomList")
-                .document(roomName)
-                .set(mapRoom)
-                .addOnSuccessListener(new WriteToMasterListOnSuccessListener(command, mapRoom))
-                .addOnFailureListener(new ActionFailureListener(command));
-    }
-
-    /**
-     * Stores into the user's "joinedRooms" collection the room name of the room being joined, its
-     * password, and if the user is the room's owner. This allows for rejoining without inputting a
-     * password in the future from the main menu, as well as appropriate actions for disengagement
-     * with the room (leaving room for non-owners and deleting the room for owners).
-     */
-    private void setRoomInfoInUser(int command, String roomName, String password,
-                                   boolean isOwner) {
-        Map<String, Object> mapRoomInfo = new HashMap<>();
-        mapRoomInfo.put(KEY_ROOM_NAME, roomName);
-        mapRoomInfo.put(KEY_PASSWORD, password);
-        mapRoomInfo.put(KEY_IS_OWNER, isOwner);
-
-        db.collection("masterUserList")
-                .document(uid)
-                .collection("joinedRooms")
-                .document(roomName)
-                .set(mapRoomInfo)
-                .addOnSuccessListener(new WriteToRoomInfoInUserOnSuccessListener())
+                .addOnSuccessListener(new WriteInputPasswordOnSuccessListener(command))
                 .addOnFailureListener(new ActionFailureListener(command));
     }
 
@@ -127,10 +151,10 @@ class RoomController {
      * Listens for success on modifying the user's "inputPassword" field, and then takes appropriate
      * action based upon the user's request (joining, leaving, or deleting room).
      */
-    private class InputPasswordOnSuccessListener implements OnSuccessListener<Void> {
+    private class WriteInputPasswordOnSuccessListener implements OnSuccessListener<Void> {
         private int command;
 
-        InputPasswordOnSuccessListener(int command) {
+        WriteInputPasswordOnSuccessListener(int command) {
             this.command = command;
         }
 
@@ -138,18 +162,26 @@ class RoomController {
         public void onSuccess(Void aVoid) {
             switch (command) {
                 case CODE_JOIN:
-                    // Password was able to be stored; search for room.
+                    // Search for room.
                     roomsReference.document(roomName).get()
-                            .addOnCompleteListener(new RoomJoinOnCompleteListener());
+                            .addOnCompleteListener(new ReadRoomsOnCompleteListener());
                     break;
 
                 case CODE_LEAVE:
-                    // Password was able to be stored; delete user from room.
-                    roomsReference.document(roomName)
+                    // Delete user from room.
+                    WriteBatch leaveBatch = db.batch();
+
+                    leaveBatch.delete(roomsReference
+                            .document(roomName)
                             .collection("users")
-                            .document(username)
-                            .delete()
-                            .addOnSuccessListener(new RoomLeaveOnSuccessListener())
+                            .document(username));
+
+                    leaveBatch.delete(masterUserReference.document(uid)
+                            .collection("joinedRooms")
+                            .document(roomName));
+
+                    leaveBatch.commit()
+                            .addOnSuccessListener(new BatchWriteLeaveRoomOnSuccessListener())
                             .addOnFailureListener(new ActionFailureListener(command));
                     break;
 
@@ -159,77 +191,11 @@ class RoomController {
         }
     }
 
-    private class WriteToMasterListOnSuccessListener implements OnSuccessListener<Void> {
-        private int command;
-        private Map<String, String> mapRoom;
-
-        WriteToMasterListOnSuccessListener(int command, Map<String, String> mapRoom) {
-            this.command = command;
-            this.mapRoom = mapRoom;
-        }
-
-        @Override
-        public void onSuccess(Void aVoid) {
-            mapRoom.put(KEY_PASSWORD, password);
-            mapRoom.put(KEY_OWNER, username);
-
-            db.collection("rooms")
-                    .document(roomName)
-                    .set(mapRoom)
-                    .addOnSuccessListener(new WriteToRoomsOnSuccessListener(command))
-                    .addOnFailureListener(new ActionFailureListener(command));
-        }
-    }
-
-    private class WriteToRoomsOnSuccessListener implements OnSuccessListener<Void> {
-        private int command;
-
-        WriteToRoomsOnSuccessListener(int command) {
-            this.command = command;
-        }
-
-        @Override
-        public void onSuccess(Void aVoid) {
-            Map<String, String> mapUsername = new HashMap<>();
-            mapUsername.put(KEY_USERNAME, username);
-
-            db.collection("rooms")
-                    .document(roomName)
-                    .collection("users")
-                    .document(username)
-                    .set(mapUsername)
-                    .addOnSuccessListener(new WriteToRoomsUsernameOnSuccessListener(command))
-                    .addOnFailureListener(new ActionFailureListener(command));
-        }
-    }
-
-    private class WriteToRoomsUsernameOnSuccessListener implements OnSuccessListener<Void> {
-        private int command;
-
-        WriteToRoomsUsernameOnSuccessListener(int command) {
-            this.command = command;
-        }
-
-        @Override
-        public void onSuccess(Void aVoid) {
-            setRoomInfoInUser(command, roomName, password, true);
-        }
-    }
-
-    private class WriteToRoomInfoInUserOnSuccessListener implements OnSuccessListener<Void> {
-
-        @Override
-        public void onSuccess(Void aVoid) {
-            Intent intent = MainPanelActivity.newIntentForCreateRoom(context, username, roomName);
-            context.startActivity(intent);
-        }
-    }
-
     /**
      * Listens for completion of searching for a room in the database, and then attempts to join it
      * if it exists.
      */
-    private class RoomJoinOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
+    private class ReadRoomsOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
 
         @Override
         public void onComplete(@NonNull Task<DocumentSnapshot> task) {
@@ -242,12 +208,30 @@ class RoomController {
                 if (document.exists()) {
                     // Room document exists.
                     if (password.equals(document.getString(MainPanelActivity.KEY_PASSWORD))) {
-                        // Password is correct; start the MainPanelActivity.
-                        Intent intent = MainPanelActivity.newIntentForJoinRoom(context,
-                                username,
-                                roomName,
-                                password);
-                        context.startActivity(intent);
+                        // Password is correct.
+                        if (newJoin) {
+                            // User is joining this room for the first time. Stores into the user's
+                            // "joinedRooms" collection the room name of the room being joined, its
+                            // password, and if the user is the room's owner. This allows for
+                            // rejoining without inputting a password in the future from the main
+                            // menu, as well as appropriate actions for disengagement with the room
+                            // (leaving room for non-owners and deleting the room for owners).
+                            Map<String, Object> mapRoomInfo = new HashMap<>();
+                            mapRoomInfo.put(KEY_ROOM_NAME, roomName);
+                            mapRoomInfo.put(KEY_PASSWORD, password);
+                            mapRoomInfo.put(KEY_OWNER, false);
+
+                            masterUserReference.document(uid)
+                                    .collection("joinedRooms")
+                                    .document(roomName)
+                                    .set(mapRoomInfo)
+                                    .addOnSuccessListener(new WriteUsersJoinedRoomOnSuccessListener())
+                                    .addOnFailureListener(new ActionFailureListener(CODE_JOIN));
+                        } else {
+                            // User is rejoining this room and does not require his "joinedRooms"
+                            // collection to be updated.
+                            startMainPanelActivity();
+                        }
                     } else {
                         // User entered the wrong password for the room.
                         Toast.makeText(context, "ERROR: Incorrect password.",
@@ -268,17 +252,39 @@ class RoomController {
     }
 
     /**
-     * Listens for success of deleting oneself from a room, and then deletes the room from the
-     * user's "joinedRooms" collection.
+     * Listens for success of the write required to save the room info into the user's "joinedRooms"
+     * collection in the database, and then launches the MainPanelActivity to bring the user to the
+     * room.
      */
-    private class RoomLeaveOnSuccessListener implements OnSuccessListener<Void> {
+    private class WriteUsersJoinedRoomOnSuccessListener implements OnSuccessListener<Void> {
 
         @Override
         public void onSuccess(Void aVoid) {
-            userReference.document(uid)
-                    .collection("joinedRooms")
-                    .document(roomName)
-                    .delete();
+            startMainPanelActivity();
+        }
+    }
+
+    /**
+     * Listens for success of the batched write required to create room documentation in the
+     * database, and then launches the MainPanelActivity to bring the user to their new room.
+     */
+    private class BatchedWriteCreateRoomOnSuccessListener implements OnSuccessListener<Void> {
+
+        @Override
+        public void onSuccess(Void aVoid) {
+            startMainPanelActivity();
+        }
+    }
+
+    /**
+     * Listens for success of the batched write required to delete the proper documentation in the
+     * database for leaving a room, and then shows a successful Toast message.
+     */
+    private class BatchWriteLeaveRoomOnSuccessListener implements OnSuccessListener<Void> {
+
+        @Override
+        public void onSuccess(Void aVoid) {
+            Toast.makeText(context, "Left room: " + roomName, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -317,6 +323,11 @@ class RoomController {
             Toast.makeText(context, failureMessage, Toast.LENGTH_SHORT).show();
             Log.d(TAG, "onFailure: " + e);
         }
+    }
+
+    private void startMainPanelActivity() {
+        Intent intent = MainPanelActivity.newIntent(context, username, roomName);
+        context.startActivity(intent);
     }
 }
 

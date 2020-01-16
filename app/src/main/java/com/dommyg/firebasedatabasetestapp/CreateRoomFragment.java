@@ -1,6 +1,5 @@
 package com.dommyg.firebasedatabasetestapp;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -90,10 +89,12 @@ public class CreateRoomFragment extends Fragment {
                 DocumentSnapshot document = task.getResult();
 
                 if (document.exists()) {
-                    Toast.makeText(getContext(), "This room name already exists.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "This room name already exists.",
+                            Toast.LENGTH_SHORT).show();
                 } else {
-                    // User entered a room name which does not exist and a password; finish CreateRoomActivity and start MainPanelActivity.
-                    new RoomController(username, password, roomName, getContext()).createRoom();
+                    // User entered a room name which does not exist and a password; create the room.
+                    new RoomController(username, password, roomName, false, getContext())
+                            .createRoom();
                 }
             }
         }
