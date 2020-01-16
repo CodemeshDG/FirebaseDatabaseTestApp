@@ -14,17 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.SetOptions;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-
 public class UpdateStatusFragment extends Fragment {
-    private static final String KEY_FEELING = "feeling";
-    private static final String KEY_LOCATION = "location";
-    private static final String KEY_BUSY = "isBusy";
 
     private int selectedFeeling;
     private String roomName;
@@ -78,41 +68,40 @@ public class UpdateStatusFragment extends Fragment {
         final CheckBox checkBoxBusy = v.findViewById(R.id.checkBoxBusy);
 
         Button buttonSubmitStatus = v.findViewById(R.id.buttonSubmitStatus);
-        buttonSubmitStatus.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (selectedFeeling != 0) {
-                    // User selected a feeling and all data is being saved to the user's document.
-                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+        buttonSubmitStatus.setOnClickListener(new SubmitOnClickListener(this,
+                editTextLocation, checkBoxBusy));
 
-                    String selectedFeelingString = Integer.toString(selectedFeeling);
+    }
 
-                    Map<String, Object> mapStatus = new HashMap<>();
-                    mapStatus.put(KEY_FEELING, selectedFeelingString);
+    /**
+     * Listens for the submit status button to be pressed and passes the values to be updated.
+     */
+    private class SubmitOnClickListener implements View.OnClickListener {
+        private final UpdateStatusFragment updateStatusFragment;
+        private final EditText editTextLocation;
+        private final CheckBox checkBoxBusy;
 
-                    if (editTextLocation.length() != 0) {
-                        String location = editTextLocation.getText().toString();
-                        mapStatus.put(KEY_LOCATION, location);
-                    } else {
-                        mapStatus.put(KEY_LOCATION, null);
-                    }
+        SubmitOnClickListener(UpdateStatusFragment updateStatusFragment,
+                                     EditText editTextLocation, CheckBox checkBoxBusy) {
+            this.updateStatusFragment = updateStatusFragment;
+            this.editTextLocation = editTextLocation;
+            this.checkBoxBusy = checkBoxBusy;
+        }
 
-                    boolean isBusy = checkBoxBusy.isChecked();
+        @Override
+        public void onClick(View view) {
+            if (selectedFeeling != 0) {
+                // User selected a feeling and all data is being saved to the user's document.
+                String selectedFeelingString = Integer.toString(selectedFeeling);
+                String location = editTextLocation.getText().toString();
+                boolean isBusy = checkBoxBusy.isChecked();
 
-                    mapStatus.put(KEY_BUSY, isBusy);
-
-                    db.collection("rooms")
-                            .document(roomName)
-                            .collection("users")
-                            .document(username)
-                            .set(mapStatus, SetOptions.merge());
-                    Objects.requireNonNull(getActivity()).finish();
-                } else {
-                    // User did not select a feeling.
-                    Toast.makeText(getContext(), "Select a feeling.", Toast.LENGTH_SHORT).show();
-                }
+                new RoomController(updateStatusFragment, username, roomName,
+                        getContext()).updateStatus(selectedFeelingString, location, isBusy);
+            } else {
+                // User did not select a feeling.
+                Toast.makeText(getContext(), "Select a feeling.", Toast.LENGTH_SHORT).show();
             }
-        });
-
+        }
     }
 }

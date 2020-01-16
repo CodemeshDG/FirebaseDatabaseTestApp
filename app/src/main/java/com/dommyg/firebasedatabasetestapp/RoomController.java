@@ -21,6 +21,10 @@ import com.google.firebase.firestore.WriteBatch;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Processes most requests to the database, including reading and writing (and deleting) information.
+ * Used to create, join, leave, or delete rooms, along with updating user statuses.
+ */
 class RoomController {
     private static final String TAG = "RoomController";
 
@@ -30,12 +34,16 @@ class RoomController {
     private static final String KEY_PASSWORD = "password";
     private static final String KEY_OWNER = "owner";
     private static final String KEY_IS_OWNER = "isOwner";
+    private static final String KEY_FEELING = "feeling";
+    private static final String KEY_LOCATION = "location";
+    private static final String KEY_BUSY = "isBusy";
 
     private static final int CODE_CREATE = 1;
     private static final int CODE_JOIN = 2;
     private static final int CODE_LEAVE = 3;
     private static final int CODE_DELETE = 4;
     private static final int CODE_CHANGE_PASSWORD = 5;
+    private static final int CODE_UPDATE_STATUS = 6;
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final CollectionReference roomsReference = db.collection("rooms");
@@ -51,6 +59,8 @@ class RoomController {
 
     private final Context context;
 
+    private final UpdateStatusFragment updateStatusFragment;
+
     RoomController(String username, String password, String roomName, boolean newJoin,
                    Context context) {
         this.username = username;
@@ -58,14 +68,96 @@ class RoomController {
         this.roomName = roomName;
         this.newJoin = newJoin;
         this.context = context;
+
+        this.updateStatusFragment = null;
+    }
+
+    RoomController(UpdateStatusFragment updateStatusFragment, String username, String roomName,
+                   Context context) {
+        this.updateStatusFragment = updateStatusFragment;
+        this.username = username;
+        this.roomName = roomName;
+        this.context = context;
+
+        this.password = null;
+        this.newJoin = false;
     }
 
     /**
      * Processes a request to create a room.
      */
     void createRoom() {
-        // Creating a room can be done with one batch write and no intermediate database actions,
-        // unlike joining, leaving, or deleting a room.
+        readMasterRoomList();
+    }
+
+    /**
+     * Processes a request to join a room.
+     */
+    void joinRoom() {
+        setInputPassword(CODE_JOIN);
+    }
+
+    /**
+     * Processes a request to leave a room.
+     */
+    void leaveRoom() {
+        setInputPassword(CODE_LEAVE);
+    }
+
+    void deleteRoom() {
+        setInputPassword(CODE_DELETE);
+    }
+
+    /**
+     * Processes a request to update the user's status.
+     */
+    void updateStatus(String selectedFeelingString, String location, boolean isBusy) {
+        Map<String, Object> mapStatus = new HashMap<>();
+        mapStatus.put(KEY_FEELING, selectedFeelingString);
+
+        if (location.length() != 0) {
+            mapStatus.put(KEY_LOCATION, location);
+        } else {
+            mapStatus.put(KEY_LOCATION, null);
+        }
+
+        mapStatus.put(KEY_BUSY, isBusy);
+
+        roomsReference.document(roomName)
+                .collection("users")
+                .document(username)
+                .set(mapStatus, SetOptions.merge())
+                .addOnSuccessListener(new UpdateStatusOnSuccessListener())
+                .addOnFailureListener(new ActionFailureListener(CODE_UPDATE_STATUS));
+    }
+
+    /**
+     * Sets the "inputPassword" field for the user so that they may read and write to certain documents
+     * in the room. This is a required set to join, leave, or delete a room.
+     */
+    private void setInputPassword(int command) {
+        Map<String, String> mapInputPassword = new HashMap<>();
+        mapInputPassword.put(KEY_INPUT_PASSWORD, password);
+
+        masterUserReference.document(uid)
+                .set(mapInputPassword, SetOptions.merge())
+                .addOnSuccessListener(new WriteInputPasswordOnSuccessListener(command))
+                .addOnFailureListener(new ActionFailureListener(command));
+    }
+
+    /**
+     * Reads the "masterRoomList" to verify if a room already exists.
+     */
+    private void readMasterRoomList() {
+        masterRoomReference.document(roomName)
+                .get()
+                .addOnCompleteListener(new ReadMasterRoomListOnCompleteListener());
+    }
+
+    /**
+     * Creates and commits a batch write to set up a new room.
+     */
+    private void batchWriteToCreateRoom() {
         WriteBatch creationBatch = db.batch();
 
         // Stores the room name in the "masterRoomList" collection for future querying (to prevent
@@ -90,9 +182,9 @@ class RoomController {
         mapUsername.put(KEY_USERNAME, username);
 
         creationBatch.set(roomsReference
-                .document(roomName)
-                .collection("users")
-                .document(username),
+                        .document(roomName)
+                        .collection("users")
+                        .document(username),
                 mapUsername);
 
         // Stores into the user's "joinedRooms" collection the room name of the room being joined, its
@@ -105,9 +197,9 @@ class RoomController {
         mapRoomInfo.put(KEY_IS_OWNER, true);
 
         creationBatch.set(masterUserReference
-                .document(uid)
-                .collection("joinedRooms")
-                .document(roomName),
+                        .document(uid)
+                        .collection("joinedRooms")
+                        .document(roomName),
                 mapRoomInfo);
 
         creationBatch.commit()
@@ -116,35 +208,24 @@ class RoomController {
     }
 
     /**
-     * Processes a request to join a room.
+     * Listens for completion of searching for a room in the database.
      */
-    void joinRoom() {
-        setInputPassword(CODE_JOIN);
-    }
+    private class ReadMasterRoomListOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
 
-    /**
-     * Processes a request to leave a room.
-     */
-    void leaveRoom() {
-        setInputPassword(CODE_LEAVE);
-    }
+        @Override
+        public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
 
-    void deleteRoom() {
-        setInputPassword(CODE_DELETE);
-    }
-
-    /**
-     * Sets the "inputPassword" field for the user so that they may read and write to certain documents
-     * in the room. This is a required set to join, leave, or delete a room.
-     */
-    private void setInputPassword(int command) {
-        Map<String, String> mapInputPassword = new HashMap<>();
-        mapInputPassword.put(KEY_INPUT_PASSWORD, password);
-
-        masterUserReference.document(uid)
-                .set(mapInputPassword, SetOptions.merge())
-                .addOnSuccessListener(new WriteInputPasswordOnSuccessListener(command))
-                .addOnFailureListener(new ActionFailureListener(command));
+                if (document.exists()) {
+                    Toast.makeText(context, "This room name already exists.",
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    // User entered a room name which does not exist and a password; create the room.
+                    batchWriteToCreateRoom();
+                }
+            }
+        }
     }
 
     /**
@@ -288,6 +369,14 @@ class RoomController {
         }
     }
 
+    private class UpdateStatusOnSuccessListener implements OnSuccessListener<Void> {
+
+        @Override
+        public void onSuccess(Void aVoid) {
+            updateStatusFragment.getActivity().finish();
+        }
+    }
+
     /**
      * Listens for action failures in the RoomController class and provides the appropriate Toast
      * message for the user.
@@ -315,6 +404,10 @@ class RoomController {
 
                 case CODE_CHANGE_PASSWORD:
                     failureMessage = "Error accessing database.";
+                    break;
+
+                case CODE_UPDATE_STATUS:
+                    failureMessage = "Error updating status.";
             }
         }
 
