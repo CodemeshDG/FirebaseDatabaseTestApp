@@ -53,8 +53,7 @@ public class CreateRoomFragment extends Fragment {
                     String password = editTextPassword.getText().toString();
                     String roomName = editTextRoomName.getText().toString();
 
-                    new RoomController(username, password, roomName, false, getContext())
-                            .createRoom();
+                    new RoomController(getContext()).createRoom(password, username, roomName);
                 } else {
                     // User did not enter a room name and/or password.
                     Toast.makeText(getContext(), "Fill out all fields.", Toast.LENGTH_SHORT).show();

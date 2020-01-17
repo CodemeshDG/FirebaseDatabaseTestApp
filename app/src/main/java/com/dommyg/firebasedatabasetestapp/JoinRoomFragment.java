@@ -57,8 +57,7 @@ public class JoinRoomFragment extends Fragment {
                     final String roomName = editTextRoomName.getText().toString();
                     final String password = editTextPassword.getText().toString();
 
-                    new RoomController(username, password, roomName, true,
-                            getContext()).joinRoom();
+                    new RoomController(getContext()).joinRoom(password, username, roomName, true);
                 } else {
                     // User did not fill out all required fields.
                     Toast.makeText(getContext(), "Fill out all fields.",

@@ -52,66 +52,42 @@ class RoomController {
 
     private final String uid = FirebaseAuth.getInstance().getUid();
 
-    private final String username;
-    private final String password;
-    private final String roomName;
-    private final boolean newJoin;
-
     private final Context context;
 
-    private final UpdateStatusFragment updateStatusFragment;
-
-    RoomController(String username, String password, String roomName, boolean newJoin,
-                   Context context) {
-        this.username = username;
-        this.password = password;
-        this.roomName = roomName;
-        this.newJoin = newJoin;
+    RoomController(Context context) {
         this.context = context;
-
-        this.updateStatusFragment = null;
-    }
-
-    RoomController(UpdateStatusFragment updateStatusFragment, String username, String roomName,
-                   Context context) {
-        this.updateStatusFragment = updateStatusFragment;
-        this.username = username;
-        this.roomName = roomName;
-        this.context = context;
-
-        this.password = null;
-        this.newJoin = false;
     }
 
     /**
      * Processes a request to create a room.
      */
-    void createRoom() {
-        readMasterRoomList();
+    void createRoom(String password, String username, String roomName) {
+        readMasterRoomList(password, username, roomName);
     }
 
     /**
      * Processes a request to join a room.
      */
-    void joinRoom() {
-        setInputPassword(CODE_JOIN);
+    void joinRoom(String password, String username, String roomName, boolean newJoin) {
+        setInputPassword(CODE_JOIN, password, username, roomName, newJoin);
     }
 
     /**
      * Processes a request to leave a room.
      */
-    void leaveRoom() {
-        setInputPassword(CODE_LEAVE);
+    void leaveRoom(String password, String username, String roomName) {
+        setInputPassword(CODE_LEAVE, password, username, roomName, false);
     }
 
-    void deleteRoom() {
-        setInputPassword(CODE_DELETE);
+    void deleteRoom(String password, String username, String roomName) {
+        setInputPassword(CODE_DELETE, password, username, roomName, false);
     }
 
     /**
      * Processes a request to update the user's status.
      */
-    void updateStatus(String selectedFeelingString, String location, boolean isBusy) {
+    void updateStatus(UpdateStatusFragment updateStatusFragment, String username, String roomName,
+                      String selectedFeelingString, String location, boolean isBusy) {
         Map<String, Object> mapStatus = new HashMap<>();
         mapStatus.put(KEY_FEELING, selectedFeelingString);
 
@@ -127,7 +103,7 @@ class RoomController {
                 .collection("users")
                 .document(username)
                 .set(mapStatus, SetOptions.merge())
-                .addOnSuccessListener(new UpdateStatusOnSuccessListener())
+                .addOnSuccessListener(new UpdateStatusOnSuccessListener(updateStatusFragment))
                 .addOnFailureListener(new ActionFailureListener(CODE_UPDATE_STATUS));
     }
 
@@ -135,29 +111,31 @@ class RoomController {
      * Sets the "inputPassword" field for the user so that they may read and write to certain documents
      * in the room. This is a required set to join, leave, or delete a room.
      */
-    private void setInputPassword(int command) {
+    private void setInputPassword(int command, String password, String username, String roomName,
+                                  boolean newJoin) {
         Map<String, String> mapInputPassword = new HashMap<>();
         mapInputPassword.put(KEY_INPUT_PASSWORD, password);
 
         masterUserReference.document(uid)
                 .set(mapInputPassword, SetOptions.merge())
-                .addOnSuccessListener(new WriteInputPasswordOnSuccessListener(command))
+                .addOnSuccessListener(new WriteInputPasswordOnSuccessListener(command, password,
+                        username, roomName, newJoin))
                 .addOnFailureListener(new ActionFailureListener(command));
     }
 
     /**
      * Reads the "masterRoomList" to verify if a room already exists.
      */
-    private void readMasterRoomList() {
+    private void readMasterRoomList(String password, String username, String roomName) {
         masterRoomReference.document(roomName)
                 .get()
-                .addOnCompleteListener(new ReadMasterRoomListOnCompleteListener());
+                .addOnCompleteListener(new ReadMasterRoomListOnCompleteListener(password, username, roomName));
     }
 
     /**
      * Creates and commits a batch write to set up a new room.
      */
-    private void batchWriteToCreateRoom() {
+    private void batchWriteToCreateRoom(String password, String username, String roomName) {
         WriteBatch creationBatch = db.batch();
 
         // Stores the room name in the "masterRoomList" collection for future querying (to prevent
@@ -203,7 +181,7 @@ class RoomController {
                 mapRoomInfo);
 
         creationBatch.commit()
-                .addOnSuccessListener(new BatchedWriteCreateRoomOnSuccessListener())
+                .addOnSuccessListener(new BatchedWriteCreateRoomOnSuccessListener(username, roomName))
                 .addOnFailureListener(new ActionFailureListener(CODE_CREATE));
     }
 
@@ -211,6 +189,15 @@ class RoomController {
      * Listens for completion of searching for a room in the database.
      */
     private class ReadMasterRoomListOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
+        private String password;
+        private String username;
+        private String roomName;
+
+        ReadMasterRoomListOnCompleteListener(String password, String username, String roomName) {
+            this.password = password;
+            this.username = username;
+            this.roomName = roomName;
+        }
 
         @Override
         public void onComplete(@NonNull Task<DocumentSnapshot> task) {
@@ -222,7 +209,7 @@ class RoomController {
                             Toast.LENGTH_SHORT).show();
                 } else {
                     // User entered a room name which does not exist and a password; create the room.
-                    batchWriteToCreateRoom();
+                    batchWriteToCreateRoom(password, username, roomName);
                 }
             }
         }
@@ -234,9 +221,18 @@ class RoomController {
      */
     private class WriteInputPasswordOnSuccessListener implements OnSuccessListener<Void> {
         private int command;
+        private String password;
+        private String username;
+        private String roomName;
+        private boolean newJoin;
 
-        WriteInputPasswordOnSuccessListener(int command) {
+        WriteInputPasswordOnSuccessListener(int command, String password, String username,
+                                                   String roomName, boolean newJoin) {
             this.command = command;
+            this.password = password;
+            this.username = username;
+            this.roomName = roomName;
+            this.newJoin = newJoin;
         }
 
         @Override
@@ -245,7 +241,8 @@ class RoomController {
                 case CODE_JOIN:
                     // Search for room.
                     roomsReference.document(roomName).get()
-                            .addOnCompleteListener(new ReadRoomsOnCompleteListener());
+                            .addOnCompleteListener(new ReadRoomsOnCompleteListener(password,
+                                    username, roomName, newJoin));
                     break;
 
                 case CODE_LEAVE:
@@ -262,7 +259,7 @@ class RoomController {
                             .document(roomName));
 
                     leaveBatch.commit()
-                            .addOnSuccessListener(new BatchWriteLeaveRoomOnSuccessListener())
+                            .addOnSuccessListener(new BatchWriteLeaveRoomOnSuccessListener(roomName))
                             .addOnFailureListener(new ActionFailureListener(command));
                     break;
 
@@ -277,6 +274,18 @@ class RoomController {
      * if it exists.
      */
     private class ReadRoomsOnCompleteListener implements OnCompleteListener<DocumentSnapshot> {
+        private String password;
+        private String username;
+        private String roomName;
+        private boolean newJoin;
+
+        ReadRoomsOnCompleteListener(String password, String username, String roomName,
+                                    boolean newJoin) {
+            this.password = password;
+            this.username = username;
+            this.roomName = roomName;
+            this.newJoin = newJoin;
+        }
 
         @Override
         public void onComplete(@NonNull Task<DocumentSnapshot> task) {
@@ -306,12 +315,13 @@ class RoomController {
                                     .collection("joinedRooms")
                                     .document(roomName)
                                     .set(mapRoomInfo)
-                                    .addOnSuccessListener(new WriteUsersJoinedRoomOnSuccessListener())
+                                    .addOnSuccessListener(new WriteUsersJoinedRoomOnSuccessListener(
+                                            username, roomName))
                                     .addOnFailureListener(new ActionFailureListener(CODE_JOIN));
                         } else {
                             // User is rejoining this room and does not require his "joinedRooms"
                             // collection to be updated.
-                            startMainPanelActivity();
+                            startMainPanelActivity(username, roomName);
                         }
                     } else {
                         // User entered the wrong password for the room.
@@ -338,10 +348,17 @@ class RoomController {
      * room.
      */
     private class WriteUsersJoinedRoomOnSuccessListener implements OnSuccessListener<Void> {
+        private String username;
+        private String roomName;
+
+        WriteUsersJoinedRoomOnSuccessListener(String username, String roomName) {
+            this.username = username;
+            this.roomName = roomName;
+        }
 
         @Override
         public void onSuccess(Void aVoid) {
-            startMainPanelActivity();
+            startMainPanelActivity(username, roomName);
         }
     }
 
@@ -350,10 +367,17 @@ class RoomController {
      * database, and then launches the MainPanelActivity to bring the user to their new room.
      */
     private class BatchedWriteCreateRoomOnSuccessListener implements OnSuccessListener<Void> {
+        private String username;
+        private String roomName;
+
+        BatchedWriteCreateRoomOnSuccessListener(String username, String roomName) {
+            this.username = username;
+            this.roomName = roomName;
+        }
 
         @Override
         public void onSuccess(Void aVoid) {
-            startMainPanelActivity();
+            startMainPanelActivity(username, roomName);
         }
     }
 
@@ -362,6 +386,11 @@ class RoomController {
      * database for leaving a room, and then shows a successful Toast message.
      */
     private class BatchWriteLeaveRoomOnSuccessListener implements OnSuccessListener<Void> {
+        private String roomName;
+
+        BatchWriteLeaveRoomOnSuccessListener(String roomName) {
+            this.roomName = roomName;
+        }
 
         @Override
         public void onSuccess(Void aVoid) {
@@ -370,6 +399,11 @@ class RoomController {
     }
 
     private class UpdateStatusOnSuccessListener implements OnSuccessListener<Void> {
+        UpdateStatusFragment updateStatusFragment;
+
+        UpdateStatusOnSuccessListener(UpdateStatusFragment updateStatusFragment) {
+            this.updateStatusFragment = updateStatusFragment;
+        }
 
         @Override
         public void onSuccess(Void aVoid) {
@@ -418,7 +452,7 @@ class RoomController {
         }
     }
 
-    private void startMainPanelActivity() {
+    private void startMainPanelActivity(String username, String roomName) {
         Intent intent = MainPanelActivity.newIntent(context, username, roomName);
         context.startActivity(intent);
     }
