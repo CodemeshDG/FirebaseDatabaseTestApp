@@ -15,6 +15,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 
@@ -27,6 +29,10 @@ import java.util.Map;
  */
 class RoomController {
     private static final String TAG = "RoomController";
+
+    private final String uid = FirebaseAuth.getInstance().getUid();
+
+    private final Context context;
 
     private static final String KEY_INPUT_PASSWORD = "inputPassword";
     private static final String KEY_USERNAME = "username";
@@ -50,9 +56,7 @@ class RoomController {
     private final CollectionReference masterUserReference = db.collection("masterUserList");
     private final CollectionReference masterRoomReference = db.collection("masterRoomList");
 
-    private final String uid = FirebaseAuth.getInstance().getUid();
 
-    private final Context context;
 
     RoomController(Context context) {
         this.context = context;
@@ -73,12 +77,15 @@ class RoomController {
     }
 
     /**
-     * Processes a request to leave a room.
+     * Processes a request to leave a room; available only to non-owners of the room.
      */
     void leaveRoom(String password, String username, String roomName) {
         setInputPassword(CODE_LEAVE, password, username, roomName, false);
     }
 
+    /**
+     * Processes a request to delete a room; available only to owners of the room.
+     */
     void deleteRoom(String password, String username, String roomName) {
         setInputPassword(CODE_DELETE, password, username, roomName, false);
     }
@@ -181,7 +188,7 @@ class RoomController {
                 mapRoomInfo);
 
         creationBatch.commit()
-                .addOnSuccessListener(new BatchedWriteCreateRoomOnSuccessListener(username, roomName))
+                .addOnSuccessListener(new BatchWriteCreateRoomOnSuccessListener(username, roomName))
                 .addOnFailureListener(new ActionFailureListener(CODE_CREATE));
     }
 
@@ -264,7 +271,11 @@ class RoomController {
                     break;
 
                 case CODE_DELETE:
-                    // TODO: Add delete room functionality for room owners.
+                    // Search for all users' documents related to the room.
+                    roomsReference.document(roomName)
+                            .collection("users")
+                            .get()
+                            .addOnCompleteListener(new ReadUsersOnCompleteListener(roomName));
             }
         }
     }
@@ -343,6 +354,49 @@ class RoomController {
     }
 
     /**
+     * Listens for completion of searching for a room's user documents in the database, and then
+     * attempts to delete them, along with the room's document in both the "rooms" and
+     * "masterRoomsList" collections.
+     */
+    private class ReadUsersOnCompleteListener implements OnCompleteListener<QuerySnapshot> {
+        private String roomName;
+
+        ReadUsersOnCompleteListener(String roomName) {
+            this.roomName = roomName;
+        }
+
+        @Override
+        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+            if (task.isSuccessful()) {
+                // Was able to retrieve users' documents.
+
+                QuerySnapshot documents = task.getResult();
+
+                WriteBatch deletionBatch = db.batch();
+
+                for (QueryDocumentSnapshot document : documents) {
+                    deletionBatch.delete(document.getReference());
+                }
+
+                    deletionBatch.delete(roomsReference.document(roomName));
+
+                    deletionBatch.delete(masterUserReference.document(uid)
+                            .collection("joinedRooms")
+                            .document(roomName));
+
+                    deletionBatch.delete(masterRoomReference.document(roomName));
+
+                    deletionBatch.commit()
+                            .addOnSuccessListener(new BatchWriteDeleteRoomOnSuccessListener(roomName))
+                            .addOnFailureListener(new ActionFailureListener(CODE_DELETE));
+
+            } else {
+                Toast.makeText(context, "Error connecting to database.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    /**
      * Listens for success of the write required to save the room info into the user's "joinedRooms"
      * collection in the database, and then launches the MainPanelActivity to bring the user to the
      * room.
@@ -366,11 +420,11 @@ class RoomController {
      * Listens for success of the batched write required to create room documentation in the
      * database, and then launches the MainPanelActivity to bring the user to their new room.
      */
-    private class BatchedWriteCreateRoomOnSuccessListener implements OnSuccessListener<Void> {
+    private class BatchWriteCreateRoomOnSuccessListener implements OnSuccessListener<Void> {
         private String username;
         private String roomName;
 
-        BatchedWriteCreateRoomOnSuccessListener(String username, String roomName) {
+        BatchWriteCreateRoomOnSuccessListener(String username, String roomName) {
             this.username = username;
             this.roomName = roomName;
         }
@@ -398,6 +452,27 @@ class RoomController {
         }
     }
 
+    /**
+     * Listens for success of the batched write required to delete the proper documentation in the
+     * database for deleting a room, and then shows a successful Toast message.
+     */
+    private class BatchWriteDeleteRoomOnSuccessListener implements OnSuccessListener<Void> {
+        private String roomName;
+
+        BatchWriteDeleteRoomOnSuccessListener(String roomName) {
+            this.roomName = roomName;
+        }
+
+        @Override
+        public void onSuccess(Void aVoid) {
+            Toast.makeText(context, "Deleted room: " + roomName, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Listens for success of the writing process to update a user's status, and then shows a
+     * successful Toast message.
+     */
     private class UpdateStatusOnSuccessListener implements OnSuccessListener<Void> {
         UpdateStatusFragment updateStatusFragment;
 

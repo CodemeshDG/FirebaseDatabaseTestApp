@@ -48,6 +48,7 @@ public class JoinedRoomAdapter extends FirestoreRecyclerAdapter<JoinedRoomItem,
 
         final String roomName = model.getRoomName();
         final String password = model.getPassword();
+        final boolean isOwner = model.getIsOwner();
 
         holder.textViewRoomName.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,8 +61,13 @@ public class JoinedRoomAdapter extends FirestoreRecyclerAdapter<JoinedRoomItem,
         holder.imageViewLeaveRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new RoomController(mainMenuFragment.getContext()).leaveRoom(password,
-                        mainMenuFragment.getUsername(), roomName);
+                if (isOwner) {
+                    new RoomController(mainMenuFragment.getContext()).deleteRoom(password,
+                            mainMenuFragment.getUsername(), roomName);
+                } else {
+                    new RoomController(mainMenuFragment.getContext()).leaveRoom(password,
+                            mainMenuFragment.getUsername(), roomName);
+                }
             }
         });
     }

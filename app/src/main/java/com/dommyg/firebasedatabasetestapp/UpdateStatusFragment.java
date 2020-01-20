@@ -96,8 +96,8 @@ public class UpdateStatusFragment extends Fragment {
                 String location = editTextLocation.getText().toString();
                 boolean isBusy = checkBoxBusy.isChecked();
 
-                new RoomController(updateStatusFragment, username, roomName,
-                        getContext()).updateStatus(selectedFeelingString, location, isBusy);
+                new RoomController(getContext()).updateStatus(updateStatusFragment, username,
+                        roomName, selectedFeelingString, location, isBusy);
             } else {
                 // User did not select a feeling.
                 Toast.makeText(getContext(), "Select a feeling.", Toast.LENGTH_SHORT).show();
